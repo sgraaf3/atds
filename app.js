@@ -23,17 +23,38 @@ class App {
 
     bindEvents() {
         // File Loading
-        document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileLoad(e));
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) fileInput.addEventListener('change', (e) => this.handleFileLoad(e));
         
-        // AT Controls
-        document.getElementById('btnResetAT').addEventListener('click', () => {
-            const autoVal = this.session.resetAT();
-            this.refreshChart();
-            alert(`AT Reset to Auto-Calculated value: ${autoVal} BPM`);
-        });
+        // Profile & Analysis
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        if (analyzeBtn) analyzeBtn.addEventListener('click', () => this.updateAnalysis());
 
-        // Crop Controls
-        document.getElementById('btnCropData').addEventListener('click', () => this.handleCrop());
+        // Reporting Buttons
+        const saveAtdsBtn = document.getElementById('saveAtdsBtn');
+        if (saveAtdsBtn) saveAtdsBtn.addEventListener('click', () => this.saveSession());
+
+        const saveTxtBtn = document.getElementById('saveTxtBtn');
+        if (saveTxtBtn) saveTxtBtn.addEventListener('click', () => this.exportTxt());
+
+        const pdfBtn = document.getElementById('pdfBtn');
+        if (pdfBtn) pdfBtn.addEventListener('click', () => this.exportPdf());
+
+        const copyBtn = document.getElementById('copyBtn');
+        if (copyBtn) copyBtn.addEventListener('click', () => this.copySummary());
+
+        // Optional Controls (Check existence)
+        const btnResetAT = document.getElementById('btnResetAT');
+        if (btnResetAT) {
+            btnResetAT.addEventListener('click', () => {
+                const autoVal = this.session.resetAT();
+                this.refreshChart();
+                alert(`AT Reset to Auto-Calculated value: ${autoVal} BPM`);
+            });
+        }
+
+        const btnCropData = document.getElementById('btnCropData');
+        if (btnCropData) btnCropData.addEventListener('click', () => this.handleCrop());
 
         // Device Connection
         const btnConnect = document.getElementById('btnConnectSerial');
@@ -151,7 +172,8 @@ class App {
 
     handleLiveData(rrValue) {
         if (!this.isLive) return;
-        // Append to session and update chart live
+        // NOTE: This is inefficient for long sessions as it re-processes and re-renders everything on each beat.
+        // A better approach would be to append data to the chart directly and calculate stats on a moving window.
         this.session.workingRR.push(rrValue);
         this.refreshChart();
     }
@@ -170,6 +192,9 @@ class App {
         if (results) {
             // Update Basic Stats
             if(document.getElementById('dispAvgHR')) document.getElementById('dispAvgHR').innerText = results.avgHR;
+            if(document.getElementById('dispTiTe')) document.getElementById('dispTiTe').innerText = results.tiTe;
+            if(document.getElementById('dispBreathRate')) document.getElementById('dispBreathRate').innerText = results.breathRate;
+            if(document.getElementById('dispHrvAmp')) document.getElementById('dispHrvAmp').innerText = results.hrvAmp;
             
             // Update VO2 Max
             const age = this.session.profile.age;
@@ -183,7 +208,100 @@ class App {
                 document.getElementById('dispVO2').innerText = vo2 || "--";
                 document.getElementById('dispVO2Class').innerText = vo2Class;
             }
+
+            // Show Results Area
+            const resultsArea = document.getElementById('resultsArea');
+            if (resultsArea) resultsArea.classList.remove('hidden');
+            
+            // Show Export Buttons
+            ['saveAtdsBtn', 'saveTxtBtn', 'pdfBtn', 'copyBtn'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('hidden');
+            });
         }
+    }
+
+    updateAnalysis() {
+        const ageInput = document.getElementById('age');
+        const weightInput = document.getElementById('weight');
+        const genderInput = document.getElementById('gender');
+
+        if (ageInput && weightInput && genderInput) {
+            this.session.setProfile({
+                age: parseInt(ageInput.value),
+                weight: parseInt(weightInput.value),
+                gender: genderInput.value
+            });
+        }
+        
+        if (this.session.workingRR.length > 0) {
+            this.refreshChart();
+        } else {
+            alert("Please load a file first.");
+        }
+    }
+
+    exportTxt() {
+        const data = this.session.workingRR;
+        if (!data || data.length === 0) {
+            alert("No data to export.");
+            return;
+        }
+        const content = data.join('\n');
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `atds_data_${new Date().toISOString().slice(0,10)}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    exportPdf() {
+        const element = document.querySelector('.container');
+        const controls = document.querySelector('.controls');
+        
+        if (controls) controls.style.display = 'none';
+        
+        const opt = {
+            margin:       0.3,
+            filename:     `atds_report_${new Date().toISOString().slice(0,10)}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        if (window.html2pdf) {
+            window.html2pdf().set(opt).from(element).save().then(() => {
+                if (controls) controls.style.display = '';
+            }).catch(err => {
+                console.error(err);
+                alert("Error generating PDF");
+                if (controls) controls.style.display = '';
+            });
+        } else {
+            alert("PDF library not loaded.");
+            if (controls) controls.style.display = '';
+        }
+    }
+
+    copySummary() {
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.innerText : '--';
+        };
+
+        const text = `ATDS Health Report Summary\n` +
+                     `--------------------------\n` +
+                     `Avg Heart Rate: ${getVal('dispAvgHR')} BPM\n` +
+                     `Ti/Te Ratio: ${getVal('dispTiTe')}\n` +
+                     `Breath Rate: ${getVal('dispBreathRate')} breaths/min\n` +
+                     `HRV Amplitude: ${getVal('dispHrvAmp')} ms\n` +
+                     `VO2 Max Est: ${getVal('dispVO2')} (${getVal('dispVO2Class')})\n`;
+                     
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Summary copied to clipboard!");
+        }).catch(err => console.error(err));
     }
 
     toggleLiveMode() {
