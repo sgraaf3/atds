@@ -1,4 +1,5 @@
 import { ChartInteractions } from './ChartInteractions.js';
+import { i18n } from '../utils/Localization.js';
 
 /**
  * MODULE: UIManager
@@ -14,51 +15,51 @@ export class UIManager {
         const controls = document.querySelector('.controls');
         if (!controls) return;
 
-        // Inject new inputs for BMI Software features
+        // Inject new inputs for BMI Software features (using data-i18n for labels)
         const extraInputs = `
-            <div class="input-group">
-                <label>Systolic BP (mmHg)</label>
+            <div class="input-group" data-i18n-group="systolicBP">
+                <label data-i18n="systolicBP">Systolic BP (mmHg)</label>
                 <input type="number" id="sysBP" value="120">
             </div>
-            <div class="input-group">
-                <label>Diastolic BP (mmHg)</label>
+            <div class="input-group" data-i18n-group="diastolicBP">
+                <label data-i18n="diastolicBP">Diastolic BP (mmHg)</label>
                 <input type="number" id="diaBP" value="80">
             </div>
-            <div class="input-group">
-                <label>Body Fat (%)</label>
+            <div class="input-group" data-i18n-group="bodyFat">
+                <label data-i18n="bodyFat">Body Fat (%)</label>
                 <input type="number" id="bodyFat" value="15">
             </div>
             <div class="input-group" style="grid-column: span 2;">
-                <label>Device Connection</label>
+                <label data-i18n="deviceConnection">Device Connection</label>
                 <div style="display: flex; gap: 10px;">
-                    <button id="btnConnectSerial" class="btn-secondary">Connect BMI Dongle (USB)</button>
-                    <button id="btnConnectBT" class="btn-secondary">Connect BlueRobin/BT</button>
+                    <button id="btnConnectSerial" class="btn-secondary" data-i18n="connectUSBDongle">Connect BMI Dongle (USB)</button>
+                    <button id="btnConnectBT" class="btn-secondary" data-i18n="connectBluetoothLE">Connect BlueRobin/BT</button>
                 </div>
             </div>
-            <div class="input-group">
-                <label>Analysis Mode</label>
+            <div class="input-group" data-i18n-group="analysisMode">
+                <label data-i18n="analysisMode">Analysis Mode</label>
                 <div style="display: flex; gap: 5px;">
-                    <button id="btnAnalyzeMode" class="btn-secondary" data-tooltip="Enter Data Cleaning Mode">Analyze Chart</button>
+                    <button id="btnAnalyzeMode" class="btn-secondary" data-tooltip-i18n="analyzeChartTooltip" data-i18n="analyzeChart">Analyze Chart</button>
                     <select id="calcSourceSelect" style="padding: 8px;">
-                        <option value="filtered">Calc: Filtered Data</option>
-                        <option value="raw">Calc: Unfiltered Data</option>
+                        <option value="filtered" data-i18n="filteredData">Calc: Filtered Data</option>
+                        <option value="raw" data-i18n="unfilteredData">Calc: Unfiltered Data</option>
                     </select>
                 </div>
             </div>
         `;
-        
+
         const div = document.createElement('div');
         div.style.display = 'contents';
         div.innerHTML = extraInputs;
         controls.insertBefore(div, controls.lastElementChild);
 
         // Add VO2 Max Card to Dashboard
-        const dashboard = document.querySelector('.dashboard');
+        const dashboard = document.getElementById('dashboardMetrics'); // Assuming a specific ID for the dashboard container
         if (dashboard) {
             const vo2Card = document.createElement('div');
             vo2Card.className = 'stat-card';
             vo2Card.innerHTML = `
-                <div class="stat-label">VO2 Max Est.</div>
+                <div class="stat-label" data-i18n="vo2MaxEst">VO2 Max Est.</div>
                 <div class="stat-value" id="dispVO2">--</div>
                 <small id="dispVO2Class">--</small>
             `;
@@ -68,20 +69,20 @@ export class UIManager {
         // Excel & Template Controls
         const btnContainer = document.querySelector('.controls');
         const templateSelect = document.createElement('select');
-        templateSelect.id = 'excelTemplateSelect';
+        templateSelect.id = 'excelTemplateSelect'; // This ID is used in app.js
         templateSelect.innerHTML = `
-            <option value="raw">Template: Raw Data</option>
-            <option value="clinical">Template: Clinical Summary</option>
-            <option value="hrv">Template: HRV Analysis</option>
+            <option value="raw" data-i18n="raw">Template: Raw Data</option>
+            <option value="clinical" data-i18n="clinical">Template: Clinical Summary</option>
+            <option value="hrv" data-i18n="hrv">Template: HRV Analysis</option>
         `;
         btnContainer.appendChild(templateSelect);
 
         const excelBtn = document.createElement('button');
         excelBtn.id = 'btnExportExcel';
         excelBtn.className = 'btn-secondary hidden';
-        excelBtn.innerText = 'Export Excel';
+        excelBtn.innerText = i18n.translate('exportExcel');
         btnContainer.appendChild(excelBtn);
-
+        
         // Report Editable
         const reportContent = document.getElementById('reportContent');
         if(reportContent) {
@@ -89,8 +90,8 @@ export class UIManager {
             reportContent.style.border = "1px dashed #ccc";
             reportContent.style.padding = "10px";
             const editHint = document.createElement('small');
-            editHint.style.color = '#7f8c8d';
-            editHint.innerText = '✎ Text below is editable.';
+            editHint.style.color = '#7f8c8d'; // Keep style
+            editHint.innerText = i18n.translate('textBelowEditable');
             reportContent.parentNode.insertBefore(editHint, reportContent);
         }
     }
@@ -112,7 +113,7 @@ export class UIManager {
         };
 
         const dsRaw = {
-            label: 'Unfiltered HR (BPM)',
+            label: i18n.translate('unfilteredHR'),
             data: data.rrData.map(rr => Math.round(60000/rr)),
             borderColor: '#e74c3c',
             backgroundColor: '#e74c3c',
@@ -146,7 +147,7 @@ export class UIManager {
                     intersect: false
                 },
                 plugins: {
-                    title: { display: true, text: isAnalyzeMode ? 'Analyze Mode: Data Cleaning' : 'Respiratory Sinus Arrhythmia (RSA)' },
+                    title: { display: true, text: isAnalyzeMode ? i18n.translate('analyzeModeTitle') : i18n.translate('rsaTitle') },
                     legend: { display: true },
                     tooltip: { enabled: !isAnalyzeMode }
                 },
@@ -156,8 +157,8 @@ export class UIManager {
                     }
                 },
                 scales: {
-                    y: { title: { display: true, text: 'Heart Rate (BPM)' } },
-                    x: { title: { display: true, text: 'Beat Count' } }
+                    y: { title: { display: true, text: i18n.translate('heartRateBPM') } },
+                    x: { title: { display: true, text: i18n.translate('beatCount') } }
                 }
             }
         });
@@ -179,10 +180,10 @@ export class UIManager {
         menu.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
         menu.style.zIndex = 1000;
 
-        const datasetName = datasetIndex === 0 ? "Filtered" : "Unfiltered";
+        const datasetName = datasetIndex === 0 ? i18n.translate('filtered') : i18n.translate('unfiltered');
 
         menu.innerHTML = `
-            <div style="font-weight:bold; border-bottom:1px solid #eee; padding:3px;">Point #${index} (${datasetName})</div>
+            <div style="font-weight:bold; border-bottom:1px solid #eee; padding:3px;">${i18n.translate('editPointTitle', { index: index, datasetName: datasetName })}</div>
             <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer;" onclick="window.app.editPoint(${index}, ${datasetIndex})">Edit Value</button>
             <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer;" onclick="window.app.deletePoint(${index})">Delete Point</button>
             <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer; color:red;" onclick="this.parentElement.remove()">Cancel</button>
@@ -219,13 +220,13 @@ export class UIManager {
         const dateStr = new Date().toLocaleString();
         
         csv += `ATDS Report (${template})\nDate,${dateStr}\n`;
-        csv += `Profile,${profile.age}y, ${profile.weight}kg\n\n`;
+        csv += `${i18n.translate('profile')},${profile.age}${i18n.translate('y')}, ${profile.weight}${i18n.translate('kg')}\n\n`;
         csv += `Index,RR(ms),BPM\n`;
         
         rrData.forEach((rr, i) => {
             csv += `${i+1},${rr},${Math.round(60000/rr)}\n`;
         });
-
+        
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = 'report.csv'; a.click();

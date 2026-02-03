@@ -3,6 +3,7 @@ import { ChartManager } from './js/modules/view/ChartManager.js';
 import { ATDSAnalyzer } from './js/modules/logic/ATDSAnalyzer.js';
 import { DeviceManager } from './js/modules/io/DeviceManager.js';
 import { PhysioMetrics } from './js/modules/logic/PhysioMetrics.js';
+import { i18n } from './js/modules/utils/Localization.js';
 import { AdvancedCharts } from './js/modules/view/AdvancedCharts.js';
 
 class App {
@@ -17,14 +18,15 @@ class App {
         this.isLive = false;
         this.isAnalyzeMode = false;
         this.isMultiView = false;
-        this.poincareChart = null;
-        this.histogramChart = null;
+        this.poincareChart = null; // Moved to ChartManager or AdvancedCharts for better encapsulation
+        this.histogramChart = null; // Moved to ChartManager or AdvancedCharts for better encapsulation
         
         // Live Analysis State
         this.liveBuffer = new CircularBuffer(60);
         this.maxSessionRR = 0;
         this.lastDataTime = 0;
         this.signalWatchdog = null;
+        this.currentSignalQuality = 'none'; // To store current signal quality for re-translation
 
         this.bindEvents();
     }
@@ -32,6 +34,8 @@ class App {
     bindEvents() {
         // File Loading
         const fileInput = document.getElementById('fileInput');
+        // Apply initial translations after DOM is ready
+        document.addEventListener('DOMContentLoaded', () => i18n.applyTranslations());
         if (fileInput) {
             fileInput.addEventListener('change', (e) => this.handleFileLoad(e));
             
@@ -58,7 +62,7 @@ class App {
         // Analyze Mode Toggle
         const btnAnalyzeMode = document.getElementById('btnAnalyzeMode');
         if (btnAnalyzeMode) btnAnalyzeMode.addEventListener('click', () => this.toggleAnalyzeMode());
-
+        
         // Zoom Controls
         const btnResetZoom = document.getElementById('btnResetZoom');
         if (btnResetZoom) btnResetZoom.addEventListener('click', () => this.chartManager.resetZoom());
@@ -89,7 +93,7 @@ class App {
             btnResetAT.addEventListener('click', () => {
                 const autoVal = this.session.resetAT();
                 this.refreshChart();
-                alert(`AT Reset to Auto-Calculated value: ${autoVal} BPM`);
+                alert(i18n.translate('atResetConfirm', { value: autoVal }));
             });
         }
 
@@ -115,10 +119,10 @@ class App {
         const btnExportPoincare = document.getElementById('btnExportPoincare');
         if (btnExportPoincare) btnExportPoincare.addEventListener('click', () => this.exportPoincareImage());
 
-        const btnExportHistogram = document.getElementById('btnExportHistogram');
-        if (btnExportHistogram) btnExportHistogram.addEventListener('click', () => this.exportHistogramImage());
+        // const btnExportHistogram = document.getElementById('btnExportHistogram');
+        // if (btnExportHistogram) btnExportHistogram.addEventListener('click', () => this.exportHistogramImage());
 
-        // Settings Modal
+        // Settings Modal (UIManager injects the button, app.js handles the modal logic)
         const btnSettings = document.getElementById('btnSettings');
         if (btnSettings) btnSettings.addEventListener('click', () => this.openSettings());
 
@@ -127,6 +131,9 @@ class App {
 
         const btnSaveSettings = document.getElementById('btnSaveSettings');
         if (btnSaveSettings) btnSaveSettings.addEventListener('click', () => this.saveSettings());
+
+        // Action Menu Handler (from UIManager)
+        // The onchange event is set in UIManager, delegating to window.app.handleAction
 
         // Close modal on outside click
         window.addEventListener('click', (e) => {
@@ -157,19 +164,19 @@ class App {
                     if (json.rrData && Array.isArray(json.rrData)) {
                         const isValid = json.rrData.length > 0 && json.rrData.every(n => typeof n === 'number' && n > 0 && n < 5000);
                         if (!isValid) {
-                            alert("Error: File contains invalid RR interval data.");
+                            alert(i18n.translate('invalidRRData'));
                             this.toggleLoading(false);
                             return;
                         }
                         this.session.loadData(json.rrData);
                     } else {
-                        alert("Error: Invalid .atds file format (missing rrData).");
+                        alert(i18n.translate('errorParsingATDS'));
                         this.toggleLoading(false);
                         return;
                     }
 
                     // Load Profile & Update UI
-                    if (json.profile) {
+                    if (json.profile) { // Ensure profile is loaded before updating UI
                         this.session.setProfile(json.profile);
                         if (json.profile.age) document.getElementById('age').value = json.profile.age;
                         if (json.profile.weight) document.getElementById('weight').value = json.profile.weight;
@@ -180,16 +187,16 @@ class App {
                         this.session.setManualAT(json.analysis.manualAT);
                     }
                 } catch (err) {
-                    alert("Error parsing ATDS file.");
+                    alert(i18n.translate('errorParsingATDS'));
                     this.toggleLoading(false);
                     return;
                 }
             } else {
                 // Legacy/Raw Text parsing
                 const numbers = content.split(/[\s,]+/).map(Number).filter(n => !isNaN(n) && n > 0 && n < 5000);
-                
+
                 if (numbers.length === 0) {
-                    alert("Error: No valid RR intervals found in file.");
+                    alert(i18n.translate('noValidRRFound'));
                     this.toggleLoading(false);
                     return;
                 }
@@ -205,7 +212,7 @@ class App {
             this.refreshChart();
                 } catch (error) {
                     console.error(error);
-                    alert("An unexpected error occurred during processing.");
+                    alert(i18n.translate('unexpectedError'));
                 } finally {
                     this.toggleLoading(false);
                 }
@@ -223,11 +230,11 @@ class App {
         const end = Math.min(this.session.workingRR.length - 1, Math.ceil(range.end));
 
         if (end - start < 10) {
-            alert("Selection too small. Please zoom out to select at least 10 beats.");
+            alert(i18n.translate('selectionTooSmall'));
             return;
         }
 
-        if (confirm(`Crop data to currently visible range (Beats ${start} to ${end})?`)) {
+        if (confirm(i18n.translate('cropConfirm', { start: start, end: end }))) {
             this.session.cropData(start, end);
             this.chartManager.resetZoom();
             this.refreshChart();
@@ -255,7 +262,7 @@ class App {
             const elBreath = document.getElementById('dispBreathRate');
             if (elBreath) {
                 const brClass = PhysioMetrics.evaluateBreathRate(results.breathRate);
-                elBreath.innerHTML = `${results.breathRate} <span style="font-size:0.6em; color:#7f8c8d">(${brClass})</span>`;
+                elBreath.innerHTML = `${results.breathRate} <span style="font-size:0.6em; color:#7f8c8d">(${i18n.translate(brClass.toLowerCase())})</span>`;
             }
 
             // Update Live VO2
@@ -272,9 +279,9 @@ class App {
 
             const elVO2 = document.getElementById('dispVO2');
             if (elVO2) {
-                elVO2.innerHTML = `${currentVO2}`;
+                elVO2.innerHTML = `${currentVO2} ${i18n.translate('mlKgMinShort')}`;
                 const elVO2Class = document.getElementById('dispVO2Class');
-                if (elVO2Class) elVO2Class.innerText = "Live Metabolic Rate";
+                if (elVO2Class) elVO2Class.innerText = i18n.translate('liveMetabolicRate');
             }
         }
     }
@@ -310,16 +317,16 @@ class App {
             const age = this.session.profile.age;
 
             if(document.getElementById('dispAvgHR')) document.getElementById('dispAvgHR').innerText = results.avgHR;
-            if(document.getElementById('dispTiTe')) document.getElementById('dispTiTe').innerText = results.tiTe;
+            if(document.getElementById('dispTiTe')) document.getElementById('dispTiTe').innerText = results.tiTe; // Ti/Te is a ratio, no unit
             
             if(document.getElementById('dispBreathRate')) {
                 const brClass = PhysioMetrics.evaluateBreathRate(results.breathRate);
-                document.getElementById('dispBreathRate').innerHTML = `${results.breathRate} <span style="font-size:0.6em; color:#7f8c8d">(${brClass})</span>`;
+                document.getElementById('dispBreathRate').innerHTML = `${results.breathRate} <span style="font-size:0.6em; color:#7f8c8d">(${i18n.translate(brClass.toLowerCase())})</span>`;
             }
 
             if(document.getElementById('dispHrvAmp')) {
                 const hrvClass = PhysioMetrics.evaluateHRV(results.hrvAmp, age);
-                document.getElementById('dispHrvAmp').innerHTML = `${results.hrvAmp} <span style="font-size:0.6em; color:#7f8c8d">(${hrvClass})</span>`;
+                document.getElementById('dispHrvAmp').innerHTML = `${results.hrvAmp} <span style="font-size:0.6em; color:#7f8c8d">(${i18n.translate(hrvClass.toLowerCase())})</span>`;
             }
 
             // Update VO2 Max
@@ -330,20 +337,19 @@ class App {
             const vo2Class = PhysioMetrics.evaluateVO2(vo2, age, gender);
             
             if(document.getElementById('dispVO2')) {
-                document.getElementById('dispVO2').innerText = vo2 || "--";
-                document.getElementById('dispVO2Class').innerText = vo2Class;
+                document.getElementById('dispVO2').innerText = `${vo2 || "--"} ${i18n.translate('mlKgMinShort')}`;
+                document.getElementById('dispVO2Class').innerText = i18n.translate(vo2Class.toLowerCase());
             }
 
             // Update Narrative Report with Age Group Comparison
+            // This section will be replaced if StansPage is rendered
             const reportContent = document.getElementById('reportContent');
             if (reportContent) {
-                const hrvClass = PhysioMetrics.evaluateHRV(results.hrvAmp, age);
-                const brClass = PhysioMetrics.evaluateBreathRate(results.breathRate);
-                let html = `Analysis for a <strong>${age}-year-old ${gender}</strong>:<br>`;
-                html += `• <strong>HRV Amplitude:</strong> ${results.hrvAmp}ms (${hrvClass} for age group).<br>`;
-                html += `• <strong>SDNN / RMSSD:</strong> ${results.sdnn}ms / ${results.rmssd}ms.<br>`;
-                html += `• <strong>VO2 Max Estimate:</strong> ${vo2 || '--'} ml/kg/min (${vo2Class}).<br>`;
-                html += `• <strong>Breath Rate:</strong> ${results.breathRate} bpm (${brClass}).`;
+                let html = i18n.translate('analysisFor', { age: age, gender: i18n.translate(gender) }) + '<br>';
+                html += `• ${i18n.translate('hrvAmplitude', { value: results.hrvAmp, class: i18n.translate(PhysioMetrics.evaluateHRV(results.hrvAmp, age).toLowerCase()) })}<br>`;
+                html += `• ${i18n.translate('sdnnRmssd', { sdnn: results.sdnn, rmssd: results.rmssd })}<br>`;
+                html += `• ${i18n.translate('vo2MaxEstimate', { value: vo2 || '--', class: i18n.translate(vo2Class.toLowerCase()) })}<br>`;
+                html += `• ${i18n.translate('breathRate', { value: results.breathRate, class: i18n.translate(PhysioMetrics.evaluateBreathRate(results.breathRate).toLowerCase()) })}`;
                 reportContent.innerHTML = html;
             }
 
@@ -352,6 +358,7 @@ class App {
 
             // Show Results Area
             const resultsArea = document.getElementById('resultsArea');
+            // This will be managed by toggleDashboardVisibility
             if (resultsArea) resultsArea.classList.remove('hidden');
             
             // Show Export Buttons
@@ -360,6 +367,8 @@ class App {
                 if (el) el.classList.remove('hidden');
             });
         }
+
+        this.toggleDashboardVisibility(true); // Ensure dashboard is visible after refresh
     }
 
     updateAnalysis() {
@@ -377,8 +386,9 @@ class App {
         
         if (this.session.workingRR.length > 0) {
             this.refreshChart();
+            this.toggleDashboardVisibility(true); // Ensure dashboard is visible
         } else {
-            alert("Please load a file first.");
+            alert(i18n.translate('pleaseLoadFile'));
         }
     }
 
@@ -443,44 +453,42 @@ class App {
     editPoint(index) {
         const currentRR = this.session.workingRR[index];
         const currentBPM = Math.round(60000/currentRR);
-        const newBPM = prompt(`Edit BPM for point #${index}:`, currentBPM);
+        const newBPM = prompt(i18n.translate('editBPM', { index: index }), currentBPM);
         
         if (newBPM !== null && !isNaN(newBPM) && newBPM > 0) {
             const newRR = Math.round(60000 / parseInt(newBPM));
             this.session.workingRR[index] = newRR;
             this.refreshChart();
         }
-        const menu = document.getElementById('chartContextMenu');
-        if(menu) menu.remove();
+        document.getElementById('chartContextMenu')?.remove();
     }
 
     deletePoint(index) {
-        if(confirm(`Delete point #${index}?`)) {
+        if(confirm(i18n.translate('deletePointConfirm', { index: index }))) {
             this.session.workingRR.splice(index, 1);
             this.refreshChart();
         }
-        const menu = document.getElementById('chartContextMenu');
-        if(menu) menu.remove();
+        document.getElementById('chartContextMenu')?.remove();
     }
 
     updateZoneTable(at) {
         const table = document.getElementById('zoneTable');
         if (!table || !at) return;
 
-        const zones = [
-            { name: "Recovery", range: `< ${Math.round(at * 0.8)}`, desc: "Active recovery, very light effort", color: "#2ecc71" },
-            { name: "Aerobic", range: `${Math.round(at * 0.8)} - ${Math.round(at * 0.9)}`, desc: "Endurance building, conversation pace", color: "#3498db" },
-            { name: "Tempo", range: `${Math.round(at * 0.9)} - ${Math.round(at * 0.95)}`, desc: "Rhythm, sustainable fast pace", color: "#9b59b6" },
-            { name: "Threshold", range: `${Math.round(at * 0.95)} - ${Math.round(at)}`, desc: "Lactate Threshold, hard effort", color: "#f1c40f" },
-            { name: "Anaerobic", range: `> ${Math.round(at)}`, desc: "Intervals, maximum effort", color: "#e74c3c" }
+        const zones = [ // Use i18n keys for name and desc
+            { nameKey: "recovery", range: `< ${Math.round(at * 0.8)}`, descKey: "recoveryDesc", color: "#2ecc71" },
+            { nameKey: "aerobic", range: `${Math.round(at * 0.8)} - ${Math.round(at * 0.9)}`, descKey: "aerobicDesc", color: "#3498db" },
+            { nameKey: "tempo", range: `${Math.round(at * 0.9)} - ${Math.round(at * 0.95)}`, descKey: "tempoDesc", color: "#9b59b6" },
+            { nameKey: "threshold", range: `${Math.round(at * 0.95)} - ${Math.round(at)}`, descKey: "thresholdDesc", color: "#f1c40f" },
+            { nameKey: "anaerobic", range: `> ${Math.round(at)}`, descKey: "anaerobicDesc", color: "#e74c3c" }
         ];
 
         let html = `
             <thead>
                 <tr>
-                    <th>Zone</th>
-                    <th>Range (BPM)</th>
-                    <th>Description</th>
+                    <th>${i18n.translate('zone')}</th>
+                    <th>${i18n.translate('rangeBPM')}</th>
+                    <th>${i18n.translate('description')}</th>
                 </tr>
             </thead>
             <tbody>
@@ -489,9 +497,9 @@ class App {
         zones.forEach(z => {
             html += `
                 <tr>
-                    <td style="border-left: 5px solid ${z.color}; font-weight:bold;">${z.name}</td>
+                    <td style="border-left: 5px solid ${z.color}; font-weight:bold;">${i18n.translate(z.nameKey)}</td>
                     <td>${z.range}</td>
-                    <td>${z.desc}</td>
+                    <td>${i18n.translate(z.descKey)}</td>
                 </tr>
             `;
         });
@@ -503,7 +511,7 @@ class App {
     exportTxt() {
         const data = this.session.workingRR;
         if (!data || data.length === 0) {
-            alert("No data to export.");
+            alert(i18n.translate('noDataToExport'));
             return;
         }
         const content = data.join('\n');
@@ -519,7 +527,7 @@ class App {
     exportExcel() {
         const data = this.session.workingRR;
         if (!data || data.length === 0) {
-            alert("No data to export.");
+            alert(i18n.translate('noDataToExport'));
             return;
         }
 
@@ -531,11 +539,11 @@ class App {
         const vo2 = PhysioMetrics.calculateVO2Max(profile.age, profile.gender, rhr);
         const vo2Class = PhysioMetrics.evaluateVO2(vo2, profile.age, profile.gender);
 
-        let csv = `ATDS Analysis Report\nDate,${new Date().toLocaleString()}\n\n`;
-        csv += `User Profile\nAge,${profile.age}\nWeight,${profile.weight}\nGender,${profile.gender}\n\n`;
-        csv += `Analysis Summary\nAvg HR,${results.avgHR} BPM\nBreath Rate,${results.breathRate} Br/Min\nHRV Amplitude,${results.hrvAmp} ms\nSDNN,${results.sdnn} ms\nRMSSD,${results.rmssd} ms\nVO2 Max Est.,${vo2 || '--'} ml/kg/min (${vo2Class})\nTi/Te Ratio,${results.tiTe}\n\n`;
-        csv += `Beat Data\nIndex,RR Interval (ms),Heart Rate (BPM)\n`;
-        
+        let csv = `${i18n.translate('atdsReport')}\n${i18n.translate('date')},${new Date().toLocaleString()}\n\n`;
+        csv += `${i18n.translate('userProfile')}\n${i18n.translate('ageShort')},${profile.age}\n${i18n.translate('weightShort')},${profile.weight}\n${i18n.translate('genderShort')},${i18n.translate(profile.gender)}\n\n`;
+        csv += `${i18n.translate('analysisSummary')}\n${i18n.translate('avgHR')},${results.avgHR} ${i18n.translate('bpmShort')}\n${i18n.translate('breathRateShort')},${results.breathRate} ${i18n.translate('brMin')}\n${i18n.translate('hrvAmplitudeExcel')},${results.hrvAmp} ${i18n.translate('msShort')}\n${i18n.translate('sdnn')},${results.sdnn} ${i18n.translate('msShort')}\n${i18n.translate('rmssd')},${results.rmssd} ${i18n.translate('msShort')}\n${i18n.translate('vo2MaxEstExcel')},${vo2 || '--'} ${i18n.translate('mlKgMinShort')} (${i18n.translate(vo2Class.toLowerCase())})\n${i18n.translate('tiTeRatioExcel')},${results.tiTe}\n\n`;
+        csv += `${i18n.translate('beatData')}\n${i18n.translate('index')},${i18n.translate('rrInterval')},${i18n.translate('heartRateBPMExcel')}\n`;
+
         data.forEach((rr, i) => {
             csv += `${i + 1},${rr},${Math.round(60000 / rr)}\n`;
         });
@@ -565,11 +573,11 @@ class App {
                 if (controls) controls.style.display = '';
             }).catch(err => {
                 console.error(err);
-                alert("Error generating PDF");
+                alert(i18n.translate('errorGeneratingPDF'));
                 if (controls) controls.style.display = '';
             });
         } else {
-            alert("PDF library not loaded.");
+            alert(i18n.translate('pdfLibraryNotLoaded'));
             if (controls) controls.style.display = '';
         }
     }
@@ -579,17 +587,17 @@ class App {
             const el = document.getElementById(id);
             return el ? el.innerText : '--';
         };
-
-        const text = `ATDS Health Report Summary\n` +
-                     `--------------------------\n` +
-                     `Avg Heart Rate: ${getVal('dispAvgHR')} BPM\n` +
-                     `Ti/Te Ratio: ${getVal('dispTiTe')}\n` +
-                     `Breath Rate: ${getVal('dispBreathRate')} breaths/min\n` +
-                     `HRV Amplitude: ${getVal('dispHrvAmp')} ms\n` +
-                     `VO2 Max Est: ${getVal('dispVO2')} (${getVal('dispVO2Class')})\n`;
+        
+        const text = `${i18n.translate('atdsHealthReportSummary')}\n` +
+                     `--------------------------\n` + // This separator is not translated
+                     `${i18n.translate('avgHeartRateSummary')} ${getVal('dispAvgHR')} ${i18n.translate('bpmShort')}\n` +
+                     `${i18n.translate('tiTeRatioSummary')} ${getVal('dispTiTe')}\n` +
+                     `${i18n.translate('breathRateSummary')} ${getVal('dispBreathRate')} ${i18n.translate('brMin')}\n` +
+                     `${i18n.translate('hrvAmplitudeSummary')} ${getVal('dispHrvAmp')} ${i18n.translate('msShort')}\n` +
+                     `${i18n.translate('vo2MaxEstSummary')} ${getVal('dispVO2')} (${getVal('dispVO2Class')})\n`;
                      
         navigator.clipboard.writeText(text).then(() => {
-            alert("Summary copied to clipboard!");
+            alert(i18n.translate('summaryCopied'));
         }).catch(err => console.error(err));
     }
 
@@ -611,7 +619,7 @@ class App {
 
         const btn = document.getElementById('btnLiveToggle');
         if (btn) {
-            btn.innerText = this.isLive ? "Stop Live Feed" : "Start Live Feed";
+            btn.innerText = this.isLive ? i18n.translate('stopLiveFeed') : i18n.translate('startLiveFeed');
             btn.classList.toggle('btn-danger');
         }
     }
@@ -626,11 +634,14 @@ class App {
         this.signalWatchdog = setInterval(() => {
             const diff = Date.now() - this.lastDataTime;
             if (diff > 5000) {
-                this.updateSignalUI('poor', 'No Signal');
+                this.currentSignalQuality = 'poor';
+                this.updateSignalUI('poor', i18n.translate('signalNoSignal'));
             } else if (diff > 2000) {
-                this.updateSignalUI('fair', 'Weak Signal');
+                this.currentSignalQuality = 'fair';
+                this.updateSignalUI('fair', i18n.translate('signalWeak'));
             } else {
-                this.updateSignalUI('good', 'Excellent');
+                this.currentSignalQuality = 'good';
+                this.updateSignalUI('good', i18n.translate('signalExcellent'));
             }
         }, 1000);
     }
@@ -640,17 +651,41 @@ class App {
         this.signalWatchdog = null;
         const elContainer = document.getElementById('signalContainer');
         if (elContainer) elContainer.classList.add('hidden');
+        this.currentSignalQuality = 'none'; // Reset state
     }
 
     updateSignalUI(quality, text) {
         const dot = document.getElementById('signalDot');
         const txt = document.getElementById('signalText');
+        this.currentSignalQuality = quality; // Store for re-translation
         
         if (dot) {
             dot.className = 'signal-dot'; // reset
             dot.classList.add(`signal-${quality}`);
         }
-        if (txt && text) txt.innerText = text;
+        if (txt && text) txt.innerText = text; // Text is already translated
+    }
+
+    toggleDashboardVisibility(show) {
+        const resultsArea = document.getElementById('resultsArea');
+        const chartRow = document.querySelector('.chart-row');
+        const reportText = document.querySelector('.report-text');
+        const dashboardCards = document.querySelector('.dashboard');
+
+        if (resultsArea) {
+            if (show) {
+                resultsArea.classList.remove('hidden');
+                // Re-render charts if data exists and they were hidden
+                if (this.session.workingRR.length > 0 && !this.chartManager.chart) {
+                    this.refreshChart();
+                }
+            } else {
+                resultsArea.classList.add('hidden');
+                // Destroy charts to free up memory when not in dashboard view
+                if (this.chartManager.chart) this.chartManager.chart.destroy();
+                this.chartManager.chart = null; // Ensure it's nullified
+            }
+        }
     }
 
     saveSession() {
@@ -667,7 +702,7 @@ class App {
     openSettings() {
         const modal = document.getElementById('settingsModal');
         if (modal) modal.classList.remove('hidden');
-        
+
         // Load saved settings
         const unit = localStorage.getItem('atds_weight_unit') || 'kg';
         const elUnit = document.getElementById('settingWeightUnit');
@@ -675,18 +710,18 @@ class App {
 
         const proto = localStorage.getItem('atds_protocol') || 'serial';
         const elProto = document.getElementById('settingProtocol');
-        if (elProto) elProto.value = proto;
+        if (elProto) elProto.value = proto; // This is for device protocol, not language
 
-        const lang = localStorage.getItem('atds_language') || 'en';
+        const lang = i18n.getLanguage(); // Get current language from Localization instance
         const elLang = document.getElementById('settingLanguage');
         if (elLang) elLang.value = lang;
     }
 
     closeSettings() {
         const modal = document.getElementById('settingsModal');
-        if (modal) modal.classList.add('hidden');
+        if (modal) modal.classList.add('hidden'); // Ensure modal is hidden
     }
-
+    
     saveSettings() {
         const elUnit = document.getElementById('settingWeightUnit');
         if (elUnit) {
@@ -694,25 +729,26 @@ class App {
             // Update UI label
             const weightGroup = document.getElementById('weight')?.parentElement;
             if (weightGroup) weightGroup.querySelector('label').innerText = `Weight (${elUnit.value})`;
+            // Re-apply translations to update weight label if it's part of i18n
+            i18n.applyTranslations();
         }
 
         const elProto = document.getElementById('settingProtocol');
         if (elProto) {
             localStorage.setItem('atds_protocol', elProto.value);
         }
-
+        
         const elLang = document.getElementById('settingLanguage');
         if (elLang) {
-            localStorage.setItem('atds_language', elLang.value);
+            i18n.setLanguage(elLang.value); // Update language and re-apply translations
         }
-
         this.closeSettings();
     }
 
     handleDeviceStatus(status) {
         if (status.type === 'battery') {
             this.updateBatteryLevel(status.value);
-        } else if (status.type === 'firmware') {
+        } else if (status.type === i18n.translate('firmwareType')) {
             console.log("Device Firmware:", status.value);
             const elFw = document.getElementById('settingFirmware');
             if (elFw) elFw.innerText = status.value;
@@ -720,7 +756,7 @@ class App {
             // Auto-save firmware version to session if needed
             // this.session.setFirmware(status.value);
         } else if (status.type === 'signal' && status.value === 'poor_contact') {
-            this.updateSignalUI('poor', 'Sensor Off Skin');
+            this.updateSignalUI('poor', i18n.translate('sensorOffSkin'));
         }
     }
 
@@ -735,7 +771,7 @@ class App {
 
         if (container) container.classList.remove('hidden');
         if (text) text.innerText = Math.round(percentage) + '%';
-        if (fill) {
+        if (fill) { // This is a visual element, no direct translation needed
             fill.style.width = percentage + '%';
             // Change color based on level
             fill.style.background = percentage < 20 ? '#e74c3c' : (percentage < 50 ? '#f1c40f' : '#2ecc71');
@@ -743,56 +779,9 @@ class App {
 
         // Auto-stop if critical
         if (this.isLive && percentage < 5) {
-            this.toggleLiveMode();
-            alert("Battery Critical (<5%): Live feed stopped automatically.");
+            this.toggleLiveMode(); // This will also update the button text
+            alert(i18n.translate('batteryCritical'));
         }
-    }
-
-    renderAdvancedCharts() {
-        const data = this.session.workingRR;
-        if (!data || data.length === 0) return;
-        
-        document.getElementById('advancedChartsArea').classList.remove('hidden');
-        if(this.poincareChart) this.poincareChart.destroy();
-        if(this.histogramChart) this.histogramChart.destroy();
-        
-        this.poincareChart = AdvancedCharts.renderPoincare('poincareChart', data);
-        this.histogramChart = AdvancedCharts.renderHistogram('histogramChart', data);
-    }
-
-    exportPoincareImage() {
-        if (!this.poincareChart) {
-            alert("Poincaré plot is not generated yet.");
-            return;
-        }
-        this.downloadChart(this.poincareChart, 'poincare_plot.png');
-    }
-
-    exportHistogramImage() {
-        if (!this.histogramChart) {
-            alert("Histogram chart is not generated yet.");
-            return;
-        }
-        this.downloadChart(this.histogramChart, 'histogram_plot.png');
-    }
-
-    downloadChart(chart, filename, backgroundColor = 'white') {
-        // Create a temporary canvas to apply background color
-        const canvas = document.createElement('canvas');
-        canvas.width = chart.canvas.width;
-        canvas.height = chart.canvas.height;
-        const ctx = canvas.getContext('2d');
-
-        // Fill background
-        ctx.fillStyle = backgroundColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Draw chart on top
-        ctx.drawImage(chart.canvas, 0, 0);
-
-        const a = document.createElement('a');
-        a.href = canvas.toDataURL('image/png');
-        a.download = filename;
-        a.click();
     }
 
     toggleLoading(show) {
@@ -802,34 +791,6 @@ class App {
             else spinner.classList.add('hidden');
         }
     }
-}
-
-class CircularBuffer {
-    constructor(size) {
-        this.size = size;
-        this.buffer = new Float32Array(size);
-        this.head = 0;
-        this.count = 0;
-    }
-
-    push(val) {
-        this.buffer[this.head] = val;
-        this.head = (this.head + 1) % this.size;
-        if (this.count < this.size) this.count++;
-    }
-
-    toArray() {
-        if (this.count < this.size) return Array.from(this.buffer.subarray(0, this.count));
-        
-        const result = new Array(this.size);
-        for (let i = 0; i < this.size; i++) {
-            result[i] = this.buffer[(this.head + i) % this.size];
-        }
-        return result;
-    }
-
-    get length() { return this.count; }
-    clear() { this.head = 0; this.count = 0; }
 }
 
 // Initialize

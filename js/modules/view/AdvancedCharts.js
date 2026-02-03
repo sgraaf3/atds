@@ -14,7 +14,7 @@ export class AdvancedCharts {
             type: 'scatter',
             data: {
                 datasets: [{
-                    label: 'Poincaré (RR_n vs RR_n+1)',
+                    label: i18n.translate('poincarePlot'),
                     data: points,
                     backgroundColor: 'rgba(52, 152, 219, 0.5)',
                     pointRadius: 2
@@ -23,9 +23,9 @@ export class AdvancedCharts {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    x: { title: { display: true, text: 'RR[n] (ms)' } },
-                    y: { title: { display: true, text: 'RR[n+1] (ms)' } }
+                scales: { // Use i18n for axis titles
+                    x: { title: { display: true, text: i18n.translate('rrN') } },
+                    y: { title: { display: true, text: i18n.translate('rrN1') } }
                 }
             }
         });

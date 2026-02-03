@@ -28,7 +28,7 @@ export class PhysioMetrics {
      * @returns {string} Classification (Poor, Fair, Good, Excellent, Superior)
      */
     static evaluateVO2(vo2, age, gender) {
-        if (!vo2) return "N/A";
+        if (!vo2) return "n_a";
 
         // Simplified ACSM Norms (ml/kg/min)
         const norms = {
@@ -51,11 +51,11 @@ export class PhysioMetrics {
         const table = norms[gender] || norms.male;
         const group = table.find(g => age <= g.maxAge) || table[table.length - 1];
 
-        if (vo2 < group.poor) return "Poor";
-        if (vo2 < group.fair) return "Fair";
-        if (vo2 < group.good) return "Good";
-        if (vo2 < group.excellent) return "Excellent";
-        return "Superior";
+        if (vo2 < group.poor) return "vo2Poor";
+        if (vo2 < group.fair) return "vo2Fair";
+        if (vo2 < group.good) return "vo2Good";
+        if (vo2 < group.excellent) return "vo2Excellent";
+        return "vo2Superior";
     }
 
     /**
@@ -71,9 +71,9 @@ export class PhysioMetrics {
         else if (age <= 50) { low = 30; high = 60; }
         else { low = 15; high = 35; }
 
-        if (hrvAmp < low) return "Low";
-        if (hrvAmp > high) return "High";
-        return "Normal";
+        if (hrvAmp < low) return "hrvLow";
+        if (hrvAmp > high) return "hrvHigh";
+        return "hrvNormal";
     }
 
     /**
@@ -82,9 +82,9 @@ export class PhysioMetrics {
      * @returns {string} Classification
      */
     static evaluateBreathRate(br) {
-        if (br < 10) return "Slow";
-        if (br > 20) return "Fast";
-        return "Normal";
+        if (br < 10) return "brSlow";
+        if (br > 20) return "brFast";
+        return "brNormal";
     }
 
     /**

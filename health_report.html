@@ -11,82 +11,83 @@
 </head>
 <body>
 
-<div class="container">
+<div class="container" data-i18n-container>
     <header>
         <div>
-            <h1>ATDS Health Report</h1>
-            <div class="subtitle">Bio-Metric Analysis System</div>
+            <h1 data-i18n="appTitle">ATDS Health Report</h1>
+            <div class="subtitle" data-i18n="subtitle">Bio-Metric Analysis System</div>
         </div>
         <div style="text-align: right;">
-            <button id="btnSettings" class="btn-secondary" style="padding: 4px 8px; font-size: 12px; margin-bottom: 5px;">⚙ Settings</button><br>
-            <strong>Status:</strong> <span style="color: green;">Ready</span><br>
+            <button id="btnSettings" class="btn-secondary" style="padding: 4px 8px; font-size: 12px; margin-bottom: 5px;" data-i18n="settings">⚙ Settings</button><br>
+            <strong data-i18n="status">Status:</strong> <span style="color: green;" data-i18n="statusReady">Ready</span><br>
             <div id="signalContainer" class="hidden" style="margin-top: 4px; font-size: 0.9em;">
-                <strong>Signal:</strong> <span id="signalDot" class="signal-dot"></span>
+                <strong data-i18n="signal">Signal:</strong> <span id="signalDot" class="signal-dot"></span>
                 <span id="signalText">--</span>
             </div>
-            <small>No Device Connected (File Mode)</small>
+            <small data-i18n="noDeviceConnected">No Device Connected (File Mode)</small>
         </div>
     </header>
 
     <div class="controls">
-        <div class="input-group">
-            <label>Load Data <span class="tooltip-icon" data-tooltip="Supports .txt (raw RR intervals) or .atds (JSON session data)">?</span></label>
+        <div class="input-group" data-i18n-group="loadData">
+            <label data-i18n="loadData">Load Data <span class="tooltip-icon" data-tooltip-i18n="loadDataTooltip">?</span></label>
             <input type="file" id="fileInput" accept=".txt,.csv,.atds">
         </div>
-        <div class="input-group">
-            <label>Weight (kg)</label>
+        <div class="input-group" data-i18n-group="weight">
+            <label data-i18n="weight" data-i18n-suffix="(kg)">Weight (kg)</label>
             <input type="number" id="weight" value="75">
         </div>
-        <div class="input-group">
-            <label>Age (years)</label>
+        <div class="input-group" data-i18n-group="age">
+            <label data-i18n="age" data-i18n-suffix="(years)">Age (years)</label>
             <input type="number" id="age" value="30">
         </div>
-        <div class="input-group">
-            <label>Gender</label>
+        <div class="input-group" data-i18n-group="gender">
+            <label data-i18n="gender">Gender</label>
             <select id="gender">
-                <option value="male">Male</option>
-                <option value="female">Female</option>
+                <option value="male" data-i18n="male">Male</option>
+                <option value="female" data-i18n="female">Female</option>
             </select>
         </div>
-        <div class="input-group" style="grid-column: span 2;">
-            <label>Device Connection</label>
-            <button id="btnConnectSerial" class="btn-secondary" style="margin-bottom: 5px;">Connect USB Dongle</button>
-            <button id="btnConnectBT" class="btn-secondary">Connect Bluetooth LE</button>
+        <div class="input-group" style="grid-column: span 2;" data-i18n-group="deviceConnection">
+            <label data-i18n="deviceConnection">Device Connection</label>
+            <button id="btnConnectSerial" class="btn-secondary" style="margin-bottom: 5px;" data-i18n="connectUSBDongle">Connect USB Dongle</button>
+            <button id="btnConnectBT" class="btn-secondary" data-i18n="connectBluetoothLE">Connect Bluetooth LE</button>
         </div>
-        <button id="analyzeBtn" data-tooltip="Process the loaded file and generate charts">Generate Report</button>
-        <button id="btnAnalyzeMode" class="btn-secondary hidden" data-tooltip="Enter Data Cleaning Mode to edit points">Analyze Chart</button>
-        <button id="btnResetZoom" class="btn-secondary hidden" data-tooltip="Reset chart zoom level">Reset Zoom</button>
-        <button id="btnMultiView" class="btn-secondary hidden" data-tooltip="Toggle side-by-side view with Poincaré plot">Multi-View</button>
-        <button id="btnCropData" class="btn-secondary hidden" data-tooltip="Crop data to current zoomed view">Crop to View</button>
-        <button id="saveAtdsBtn" class="btn-secondary hidden" data-tooltip="Save current session as .atds (JSON)">Save ATDS</button>
-        <button id="saveTxtBtn" class="btn-secondary hidden" data-tooltip="Export raw RR intervals as .txt">Save TXT</button>
-        <button id="excelBtn" class="btn-secondary hidden" data-tooltip="Export analysis summary and data as .csv">Save Excel</button>
-        <button id="pdfBtn" class="btn-danger hidden" data-tooltip="Download report as PDF">Export PDF</button>
-        <button id="copyBtn" class="btn-secondary hidden" data-tooltip="Copy summary text to clipboard">Copy Text</button>
+        <button id="analyzeBtn" data-tooltip-i18n="generateReportTooltip" data-i18n="generateReport">Generate Report</button>
+        <button id="btnAnalyzeMode" class="btn-secondary hidden" data-tooltip-i18n="analyzeChartTooltip" data-i18n="analyzeChart">Analyze Chart</button>
+        <button id="btnResetZoom" class="btn-secondary hidden" data-tooltip-i18n="resetZoomTooltip" data-i18n="resetZoom">Reset Zoom</button>
+        <button id="btnMultiView" class="btn-secondary hidden" data-tooltip-i18n="multiViewTooltip" data-i18n="multiView">Multi-View</button>
+        <button id="btnCropData" class="btn-secondary hidden" data-tooltip-i18n="cropToViewTooltip" data-i18n="cropToView">Crop to View</button>
+        <button id="saveAtdsBtn" class="btn-secondary hidden" data-tooltip-i18n="saveATDSTooltip" data-i18n="saveATDS">Save ATDS</button>
+        <button id="saveTxtBtn" class="btn-secondary hidden" data-tooltip-i18n="saveTXTTooltip" data-i18n="saveTXT">Save TXT</button>
+        <button id="excelBtn" class="btn-secondary hidden" data-tooltip-i18n="saveExcelTooltip" data-i18n="saveExcel">Save Excel</button>
+        <button id="pdfBtn" class="btn-danger hidden" data-tooltip-i18n="exportPDFTooltip" data-i18n="exportPDF">Export PDF</button>
+        <button id="copyBtn" class="btn-secondary hidden" data-tooltip-i18n="copyTextTooltip" data-i18n="copyText">Copy Text</button>
     </div>
 
     <div id="resultsArea" class="hidden">
-        <div class="dashboard">
+        <div class="dashboard" id="dashboardMetrics">
             <div class="stat-card">
-                <div class="stat-label">Avg Heart Rate <span class="tooltip-icon" data-tooltip="Average beats per minute calculated from RR intervals">?</span></div>
+                <div class="stat-label" data-i18n="avgHeartRate">Avg Heart Rate <span class="tooltip-icon" data-tooltip-i18n="avgHeartRateTooltip">?</span></div>
                 <div class="stat-value" id="dispAvgHR">--</div>
-                <small>BPM</small>
+                <small data-i18n="bpmShort">BPM</small>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Ti / Te Ratio <span class="tooltip-icon" data-tooltip="Inhalation Time divided by Exhalation Time. >1 means longer inhale.">?</span></div>
+                <div class="stat-label" data-i18n="tiTeRatio">Ti / Te Ratio <span class="tooltip-icon" data-tooltip-i18n="tiTeRatioTooltip">?</span></div>
                 <div class="stat-value" id="dispTiTe">--</div>
-                <small>Inhale/Exhale Efficiency</small>
+                <small data-i18n="tiTeDesc">Inhale/Exhale Efficiency</small>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Breath Rate <span class="tooltip-icon" data-tooltip="Estimated breaths per minute based on RSA cycles">?</span></div>
+                <div class="stat-label" data-i18n="breathRate">Breath Rate <span class="tooltip-icon" data-tooltip-i18n="breathRateTooltip">?</span></div>
                 <div class="stat-value" id="dispBreathRate">--</div>
-                <small>Breaths/Min</small>
+                <small data-i18n="brMin">Breaths/Min</small>
             </div>
             <div class="stat-card">
-                <div class="stat-label">HRV Amplitude <span class="tooltip-icon" data-tooltip="Average difference between min and max heart rate during a breath cycle (RSA)">?</span></div>
+                <div class="stat-label" data-i18n="hrvAmplitudeShort">HRV Amplitude <span class="tooltip-icon" data-tooltip-i18n="hrvAmplitudeTooltip">?</span></div>
                 <div class="stat-value" id="dispHrvAmp">--</div>
-                <small>ms (RSA)</small>
+                <small data-i18n="msRSA">ms (RSA)</small>
             </div>
+            <!-- VO2 Max card is injected by UIManager.js -->
         </div>
 
         <div class="chart-row">
@@ -99,10 +100,10 @@
         </div>
 
         <div class="report-text">
-            <h3>Analysis Summary</h3>
-            <p id="reportContent">Upload data to see analysis.</p>
+            <h3 data-i18n="analysisSummary">Analysis Summary</h3>
+            <p id="reportContent" data-i18n="uploadDataToSeeAnalysis">Upload data to see analysis.</p>
             
-            <h4>Training Zones (Estimated)</h4>
+            <h4 data-i18n="trainingZones">Training Zones (Estimated)</h4>
             <table class="zone-table" id="zoneTable">
                 <!-- Populated by JS -->
             </table>
@@ -114,35 +115,35 @@
 <div id="settingsModal" class="modal hidden">
     <div class="modal-content">
         <span class="close-modal">&times;</span>
-        <h2>Preferences</h2>
-        <div class="input-group">
-            <label>Weight Unit</label>
+        <h2 data-i18n="preferences">Preferences</h2>
+        <div class="input-group" data-i18n-group="weightUnit">
+            <label data-i18n="weightUnit">Weight Unit</label>
             <select id="settingWeightUnit">
-                <option value="kg">Kilograms (kg)</option>
-                <option value="lbs">Pounds (lbs)</option>
+                <option value="kg" data-i18n="kilograms">Kilograms (kg)</option>
+                <option value="lbs" data-i18n="pounds">Pounds (lbs)</option>
             </select>
         </div>
-        <div class="input-group">
-            <label>Device Protocol</label>
+        <div class="input-group" data-i18n-group="deviceProtocol">
+            <label data-i18n="deviceProtocol">Device Protocol</label>
             <select id="settingProtocol">
-                <option value="serial">USB Serial (BM-USBCDC)</option>
-                <option value="ble">Bluetooth LE (BlueRobin)</option>
+                <option value="serial" data-i18n="usbSerial">USB Serial (BM-USBCDC)</option>
+                <option value="ble" data-i18n="bluetoothLE">Bluetooth LE (BlueRobin)</option>
             </select>
         </div>
-        <div class="input-group">
-            <label>Language</label>
+        <div class="input-group" data-i18n-group="language">
+            <label data-i18n="language">Language</label>
             <select id="settingLanguage">
-                <option value="en">English</option>
-                <option value="nl">Dutch (Nederlands)</option>
-                <option value="de">German (Deutsch)</option>
-                <option value="fr">French (Français)</option>
+                <option value="en" data-i18n="english">English</option>
+                <option value="nl" data-i18n="dutch">Dutch (Nederlands)</option>
+                <option value="de" data-i18n="german">German (Deutsch)</option>
+                <option value="fr" data-i18n="french">French (Français)</option>
             </select>
         </div>
-        <div class="input-group">
-            <label>Connected Device FW</label>
-            <div id="settingFirmware" style="padding: 10px; background: #eee; border-radius: 4px; font-size: 0.9em;">--</div>
+        <div class="input-group" data-i18n-group="connectedDeviceFW">
+            <label data-i18n="connectedDeviceFW">Connected Device FW</label>
+            <div id="settingFirmware" style="padding: 10px; background: #eee; border-radius: 4px; font-size: 0.9em;" data-i18n-default="--">--</div>
         </div>
-        <button id="btnSaveSettings" class="btn-secondary" style="margin-top: 15px; width: 100%;">Save Preferences</button>
+        <button id="btnSaveSettings" class="btn-secondary" style="margin-top: 15px; width: 100%;" data-i18n="savePreferences">Save Preferences</button>
     </div>
 </div>
 

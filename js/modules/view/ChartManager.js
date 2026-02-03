@@ -1,4 +1,5 @@
 import { ChartInteractions } from './ChartInteractions.js';
+import { i18n } from '../utils/Localization.js';
 
 export class ChartManager {
     constructor(canvasId) {
@@ -19,7 +20,7 @@ export class ChartManager {
         
         // Main Dataset (Working RR)
         datasets.push({
-            label: isAnalyzeMode ? 'Raw Data (Editable)' : 'Heart Rate (BPM)',
+            label: isAnalyzeMode ? `${i18n.translate('raw')} (${i18n.translate('editable')})` : i18n.translate('heartRateBPM'),
             data: data.map(rr => Math.round(60000/rr)),
             borderColor: isAnalyzeMode ? '#e74c3c' : '#3498db',
             backgroundColor: isAnalyzeMode ? 'rgba(231, 76, 60, 0.1)' : 'rgba(52, 152, 219, 0.1)',
@@ -35,7 +36,7 @@ export class ChartManager {
         // Smoothed Dataset (Only in Analyze Mode)
         if (isAnalyzeMode && smoothedData) {
             datasets.push({
-                label: 'Smoothed / Filtered',
+                label: `${i18n.translate('smoothed')} / ${i18n.translate('filtered')}`,
                 data: smoothedData.map(rr => Math.round(60000/rr)),
                 borderColor: '#3498db',
                 borderWidth: 2,
@@ -89,9 +90,9 @@ export class ChartManager {
                         }
                     }
                 },
-                scales: {
-                    x: { title: { display: true, text: 'Beat Count' } },
-                    y: { title: { display: true, text: 'BPM' }, min: 30, max: 220 }
+                scales: { // Use i18n for axis titles
+                    x: { title: { display: true, text: i18n.translate('beatCount') } },
+                    y: { title: { display: true, text: i18n.translate('heartRateBPM') }, min: 30, max: 220 }
                 }
             }
         });
