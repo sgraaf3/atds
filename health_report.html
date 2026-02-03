@@ -20,6 +20,10 @@
         <div style="text-align: right;">
             <button id="btnSettings" class="btn-secondary" style="padding: 4px 8px; font-size: 12px; margin-bottom: 5px;">⚙ Settings</button><br>
             <strong>Status:</strong> <span style="color: green;">Ready</span><br>
+            <div id="signalContainer" class="hidden" style="margin-top: 4px; font-size: 0.9em;">
+                <strong>Signal:</strong> <span id="signalDot" class="signal-dot"></span>
+                <span id="signalText">--</span>
+            </div>
             <small>No Device Connected (File Mode)</small>
         </div>
     </header>
@@ -44,6 +48,11 @@
                 <option value="female">Female</option>
             </select>
         </div>
+        <div class="input-group" style="grid-column: span 2;">
+            <label>Device Connection</label>
+            <button id="btnConnectSerial" class="btn-secondary" style="margin-bottom: 5px;">Connect USB Dongle</button>
+            <button id="btnConnectBT" class="btn-secondary">Connect Bluetooth LE</button>
+        </div>
         <button id="analyzeBtn" data-tooltip="Process the loaded file and generate charts">Generate Report</button>
         <button id="btnAnalyzeMode" class="btn-secondary hidden" data-tooltip="Enter Data Cleaning Mode to edit points">Analyze Chart</button>
         <button id="btnResetZoom" class="btn-secondary hidden" data-tooltip="Reset chart zoom level">Reset Zoom</button>
@@ -51,6 +60,7 @@
         <button id="btnCropData" class="btn-secondary hidden" data-tooltip="Crop data to current zoomed view">Crop to View</button>
         <button id="saveAtdsBtn" class="btn-secondary hidden" data-tooltip="Save current session as .atds (JSON)">Save ATDS</button>
         <button id="saveTxtBtn" class="btn-secondary hidden" data-tooltip="Export raw RR intervals as .txt">Save TXT</button>
+        <button id="excelBtn" class="btn-secondary hidden" data-tooltip="Export analysis summary and data as .csv">Save Excel</button>
         <button id="pdfBtn" class="btn-danger hidden" data-tooltip="Download report as PDF">Export PDF</button>
         <button id="copyBtn" class="btn-secondary hidden" data-tooltip="Copy summary text to clipboard">Copy Text</button>
     </div>
@@ -117,6 +127,15 @@
             <select id="settingProtocol">
                 <option value="serial">USB Serial (BM-USBCDC)</option>
                 <option value="ble">Bluetooth LE (BlueRobin)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Language</label>
+            <select id="settingLanguage">
+                <option value="en">English</option>
+                <option value="nl">Dutch (Nederlands)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="fr">French (Français)</option>
             </select>
         </div>
         <div class="input-group">

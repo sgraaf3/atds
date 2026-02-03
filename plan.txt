@@ -4,29 +4,22 @@
 The following features are required to match the advanced analytical capabilities and UI of the original ATDS software:
 
 1. Advanced Analysis & Metrics:
-   - Manual AT Line Setting: Interactive horizontal line on the chart to manually set the Anaerobic Threshold, overriding the Auto-AT.
-   - Data Selection (Cropping): Ability to select a specific time range (zone) on the chart to analyze only that segment (e.g., "Analyze Selection").
-   - VO2 Max Estimation: Implement algorithm to estimate VO2 Max based on HR/HRV data.
-   - Live VO2 & Breath: Real-time calculation and display of metabolic and respiratory rates during live feed.
-   - Age Group Comparison: Compare calculated metrics against normative data for the user's age group.
-   - Firmware Version Check: Query device for "V1_5" string upon connection.
+   - Advanced HRV Statistics: Implementation of SDNN and RMSSD calculations.
 
 2. User Interface Overhaul ("Old but New"):
-   - Settings Panel: Modal or Sidebar for configuring Units, Language, and Device preferences.
+   - Settings Panel: Expand to include Language selection (currently supports Units/Protocol).
    - Toggles: Quick switches for "Filter On/Off", "Live Mode", "Show/Hide Zones".
    - Conditional Styling: UI elements that change color/style based on values (e.g., HR Zone colors, Signal Quality warnings).
-   - Interactive Charting: Click-and-drag to select zones, drag AT line, Zoom controls.
 
 3. Advanced Visualizations:
-   - Multi-view Dashboard: Ability to see Linegraph and Poincare side-by-side.
-   - Analyze Chart Mode: Dual-line (Filtered/Raw) view with point editing tools.
+   - Export Options: Refine Excel export to include calculated metrics, not just raw data.
 
 [COMPLETION STATUS]
-- Core Logic: 80% (Missing advanced HRV stats like SDNN, RMSSD)
-- UI/UX: 60% (Missing Settings, Interactive Zoom)
-- Connectivity: 50% (Basic connection works, missing firmware checks/bonding)
-- Reporting: 90% (Excel/PDF/Edit implemented)
-- **Overall Status: NOT DONE.**
+ Core Logic: 95% (Missing SDNN/RMSSD)
+ UI/UX: 85% (Settings, Zoom, Multi-view implemented. Needs polish.)
+ Connectivity: 80% (Firmware check added. Bluetooth bonding pending.)
+ Reporting: 95% (Excel/PDF/Edit implemented)
+ **Overall Status: NEARING COMPLETION.**
 
 [PROCESSED FUNCTIONALITIES]
 The following features have been implemented in the current JavaScript modules:
@@ -47,6 +40,12 @@ The following features have been implemented in the current JavaScript modules:
    - Analyze Mode (Data Cleaning & Selection).
    - VO2 Max Estimation & Normative Comparison.
    - Manual AT Line (Interactive Chart Plugin).
+   - Live VO2 & Breath Analysis.
+   - Age Group Comparisons.
+   - Multi-view Dashboard (Line + Poincaré).
+   - Data Selection (Cropping) & Zoom.
+   - Settings Modal (Units, Protocol, Firmware).
 
 3. Connectivity (DeviceManager.js):
    - Basic Web Serial Connection.
+   - Firmware Version Detection ("V1_5").

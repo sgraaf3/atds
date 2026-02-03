@@ -21,8 +21,10 @@ class App {
         this.histogramChart = null;
         
         // Live Analysis State
-        this.liveBuffer = [];
+        this.liveBuffer = new CircularBuffer(60);
         this.maxSessionRR = 0;
+        this.lastDataTime = 0;
+        this.signalWatchdog = null;
 
         this.bindEvents();
     }
@@ -30,7 +32,24 @@ class App {
     bindEvents() {
         // File Loading
         const fileInput = document.getElementById('fileInput');
-        if (fileInput) fileInput.addEventListener('change', (e) => this.handleFileLoad(e));
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => this.handleFileLoad(e));
+            
+            // Drag & Drop Support
+            const dropZone = fileInput.closest('.input-group');
+            if (dropZone) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+
+                dropZone.addEventListener('dragover', () => dropZone.style.backgroundColor = 'rgba(52, 152, 219, 0.1)');
+                dropZone.addEventListener('dragleave', () => dropZone.style.backgroundColor = '');
+                dropZone.addEventListener('drop', (e) => { dropZone.style.backgroundColor = ''; this.handleFileLoad(e); });
+            }
+        }
         
         // Profile & Analysis
         const analyzeBtn = document.getElementById('analyzeBtn');
@@ -55,6 +74,9 @@ class App {
         const saveTxtBtn = document.getElementById('saveTxtBtn');
         if (saveTxtBtn) saveTxtBtn.addEventListener('click', () => this.exportTxt());
 
+        const excelBtn = document.getElementById('excelBtn');
+        if (excelBtn) excelBtn.addEventListener('click', () => this.exportExcel());
+
         const pdfBtn = document.getElementById('pdfBtn');
         if (pdfBtn) pdfBtn.addEventListener('click', () => this.exportPdf());
 
@@ -77,6 +99,9 @@ class App {
         // Device Connection
         const btnConnect = document.getElementById('btnConnectSerial');
         if (btnConnect) btnConnect.addEventListener('click', () => this.device.connect());
+
+        const btnConnectBT = document.getElementById('btnConnectBT');
+        if (btnConnectBT) btnConnectBT.addEventListener('click', () => this.device.connectBluetooth());
 
         const btnLive = document.getElementById('btnLiveToggle');
         if (btnLive) btnLive.addEventListener('click', () => this.toggleLiveMode());
@@ -111,7 +136,7 @@ class App {
     }
 
     handleFileLoad(event) {
-        const file = event.target.files[0];
+        const file = event.dataTransfer ? event.dataTransfer.files[0] : event.target.files[0];
         if (!file) return;
 
         this.toggleLoading(true);
@@ -211,6 +236,7 @@ class App {
 
     handleLiveData(rrValue) {
         if (!this.isLive) return;
+        this.lastDataTime = Date.now();
         this.session.workingRR.push(rrValue);
         // Efficient moving window update
         this.chartManager.updateLive(rrValue);
@@ -220,11 +246,10 @@ class App {
 
         // Live Analysis (Circular Buffer / Sliding Window)
         this.liveBuffer.push(rrValue);
-        if (this.liveBuffer.length > 60) this.liveBuffer.shift();
 
         if (this.liveBuffer.length < 10) return;
 
-        const results = this.analyzer.process(this.liveBuffer);
+        const results = this.analyzer.process(this.liveBuffer.toArray());
         if (results) {
             // Update Breath Rate
             const elBreath = document.getElementById('dispBreathRate');
@@ -316,6 +341,7 @@ class App {
                 const brClass = PhysioMetrics.evaluateBreathRate(results.breathRate);
                 let html = `Analysis for a <strong>${age}-year-old ${gender}</strong>:<br>`;
                 html += `• <strong>HRV Amplitude:</strong> ${results.hrvAmp}ms (${hrvClass} for age group).<br>`;
+                html += `• <strong>SDNN / RMSSD:</strong> ${results.sdnn}ms / ${results.rmssd}ms.<br>`;
                 html += `• <strong>VO2 Max Estimate:</strong> ${vo2 || '--'} ml/kg/min (${vo2Class}).<br>`;
                 html += `• <strong>Breath Rate:</strong> ${results.breathRate} bpm (${brClass}).`;
                 reportContent.innerHTML = html;
@@ -329,7 +355,7 @@ class App {
             if (resultsArea) resultsArea.classList.remove('hidden');
             
             // Show Export Buttons
-            ['saveAtdsBtn', 'saveTxtBtn', 'pdfBtn', 'copyBtn', 'btnAnalyzeMode', 'btnResetZoom', 'btnMultiView', 'btnCropData'].forEach(id => {
+            ['saveAtdsBtn', 'saveTxtBtn', 'excelBtn', 'pdfBtn', 'copyBtn', 'btnAnalyzeMode', 'btnResetZoom', 'btnMultiView', 'btnCropData'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('hidden');
             });
@@ -490,6 +516,36 @@ class App {
         URL.revokeObjectURL(url);
     }
 
+    exportExcel() {
+        const data = this.session.workingRR;
+        if (!data || data.length === 0) {
+            alert("No data to export.");
+            return;
+        }
+
+        const results = this.analyzer.process(data);
+        const profile = this.session.profile;
+        
+        // Calculate VO2
+        const rhr = 60000 / Math.max(...data);
+        const vo2 = PhysioMetrics.calculateVO2Max(profile.age, profile.gender, rhr);
+        const vo2Class = PhysioMetrics.evaluateVO2(vo2, profile.age, profile.gender);
+
+        let csv = `ATDS Analysis Report\nDate,${new Date().toLocaleString()}\n\n`;
+        csv += `User Profile\nAge,${profile.age}\nWeight,${profile.weight}\nGender,${profile.gender}\n\n`;
+        csv += `Analysis Summary\nAvg HR,${results.avgHR} BPM\nBreath Rate,${results.breathRate} Br/Min\nHRV Amplitude,${results.hrvAmp} ms\nSDNN,${results.sdnn} ms\nRMSSD,${results.rmssd} ms\nVO2 Max Est.,${vo2 || '--'} ml/kg/min (${vo2Class})\nTi/Te Ratio,${results.tiTe}\n\n`;
+        csv += `Beat Data\nIndex,RR Interval (ms),Heart Rate (BPM)\n`;
+        
+        data.forEach((rr, i) => {
+            csv += `${i + 1},${rr},${Math.round(60000 / rr)}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `atds_export_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+        URL.revokeObjectURL(url);
+    }
+
     exportPdf() {
         const element = document.querySelector('.container');
         const controls = document.querySelector('.controls');
@@ -542,10 +598,15 @@ class App {
         
         if (this.isLive) {
             // Initialize live state
-            this.liveBuffer = [];
+            this.liveBuffer.clear();
             this.maxSessionRR = this.session.workingRR.length > 0 
                 ? Math.max(...this.session.workingRR) 
                 : 0;
+            
+            this.lastDataTime = Date.now();
+            this.startSignalWatchdog();
+        } else {
+            this.stopSignalWatchdog();
         }
 
         const btn = document.getElementById('btnLiveToggle');
@@ -553,6 +614,43 @@ class App {
             btn.innerText = this.isLive ? "Stop Live Feed" : "Start Live Feed";
             btn.classList.toggle('btn-danger');
         }
+    }
+
+    startSignalWatchdog() {
+        const elContainer = document.getElementById('signalContainer');
+        if (elContainer) elContainer.classList.remove('hidden');
+        
+        this.updateSignalUI('good'); // Assume good start
+
+        if (this.signalWatchdog) clearInterval(this.signalWatchdog);
+        this.signalWatchdog = setInterval(() => {
+            const diff = Date.now() - this.lastDataTime;
+            if (diff > 5000) {
+                this.updateSignalUI('poor', 'No Signal');
+            } else if (diff > 2000) {
+                this.updateSignalUI('fair', 'Weak Signal');
+            } else {
+                this.updateSignalUI('good', 'Excellent');
+            }
+        }, 1000);
+    }
+
+    stopSignalWatchdog() {
+        if (this.signalWatchdog) clearInterval(this.signalWatchdog);
+        this.signalWatchdog = null;
+        const elContainer = document.getElementById('signalContainer');
+        if (elContainer) elContainer.classList.add('hidden');
+    }
+
+    updateSignalUI(quality, text) {
+        const dot = document.getElementById('signalDot');
+        const txt = document.getElementById('signalText');
+        
+        if (dot) {
+            dot.className = 'signal-dot'; // reset
+            dot.classList.add(`signal-${quality}`);
+        }
+        if (txt && text) txt.innerText = text;
     }
 
     saveSession() {
@@ -578,6 +676,10 @@ class App {
         const proto = localStorage.getItem('atds_protocol') || 'serial';
         const elProto = document.getElementById('settingProtocol');
         if (elProto) elProto.value = proto;
+
+        const lang = localStorage.getItem('atds_language') || 'en';
+        const elLang = document.getElementById('settingLanguage');
+        if (elLang) elLang.value = lang;
     }
 
     closeSettings() {
@@ -599,6 +701,11 @@ class App {
             localStorage.setItem('atds_protocol', elProto.value);
         }
 
+        const elLang = document.getElementById('settingLanguage');
+        if (elLang) {
+            localStorage.setItem('atds_language', elLang.value);
+        }
+
         this.closeSettings();
     }
 
@@ -612,6 +719,8 @@ class App {
             
             // Auto-save firmware version to session if needed
             // this.session.setFirmware(status.value);
+        } else if (status.type === 'signal' && status.value === 'poor_contact') {
+            this.updateSignalUI('poor', 'Sensor Off Skin');
         }
     }
 
@@ -693,6 +802,34 @@ class App {
             else spinner.classList.add('hidden');
         }
     }
+}
+
+class CircularBuffer {
+    constructor(size) {
+        this.size = size;
+        this.buffer = new Float32Array(size);
+        this.head = 0;
+        this.count = 0;
+    }
+
+    push(val) {
+        this.buffer[this.head] = val;
+        this.head = (this.head + 1) % this.size;
+        if (this.count < this.size) this.count++;
+    }
+
+    toArray() {
+        if (this.count < this.size) return Array.from(this.buffer.subarray(0, this.count));
+        
+        const result = new Array(this.size);
+        for (let i = 0; i < this.size; i++) {
+            result[i] = this.buffer[(this.head + i) % this.size];
+        }
+        return result;
+    }
+
+    get length() { return this.count; }
+    clear() { this.head = 0; this.count = 0; }
 }
 
 // Initialize

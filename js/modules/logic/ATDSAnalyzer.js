@@ -79,11 +79,25 @@ export class ATDSAnalyzer {
         const avgHR = 60000 / (totalRR / cleanRR.length);
         const durationMin = totalRR / 60000;
 
+        // Advanced HRV (SDNN, RMSSD)
+        const meanRR = totalRR / cleanRR.length;
+        const variance = cleanRR.reduce((sum, rr) => sum + Math.pow(rr - meanRR, 2), 0) / (cleanRR.length - 1 || 1);
+        const sdnn = Math.round(Math.sqrt(variance));
+
+        let sumSqDiff = 0;
+        for(let i=0; i<cleanRR.length-1; i++) {
+            const diff = cleanRR[i+1] - cleanRR[i];
+            sumSqDiff += diff * diff;
+        }
+        const rmssd = Math.round(Math.sqrt(sumSqDiff / (cleanRR.length - 1 || 1)));
+
         return {
             avgHR: Math.round(avgHR),
             tiTe: teSum > 0 ? (tiSum / teSum).toFixed(2) : "1.00",
             breathRate: Math.round(breathCount / durationMin) || 0,
             hrvAmp: Math.round(hrvAmpSum / (breathCount || 1)),
+            sdnn: sdnn,
+            rmssd: rmssd,
             smoothedData: smoothedRR
         };
     }

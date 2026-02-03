@@ -176,3 +176,17 @@ button#analyzeBtn:hover { background-color: #2980b9; }
 .close-modal:hover {
     color: #333;
 }
+
+/* Signal Quality */
+.signal-dot {
+    height: 10px;
+    width: 10px;
+    background-color: #bdc3c7;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+.signal-good { background-color: #2ecc71; box-shadow: 0 0 4px #2ecc71; }
+.signal-fair { background-color: #f1c40f; }
+.signal-poor { background-color: #e74c3c; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0.5; } }
