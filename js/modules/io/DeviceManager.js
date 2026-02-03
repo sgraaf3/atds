@@ -19,7 +19,7 @@ export class DeviceManager {
      */
     async connect() {
         if (!("serial" in navigator)) {
-            alert(i18n.translate('webSerialNotSupported'));
+            alert(i18n.translate('webSerialNotSupported')); // Translated alert
             return false;
         }
 
@@ -46,7 +46,7 @@ export class DeviceManager {
 
             return true;
         } catch (err) {
-            console.error(i18n.translate('serialConnectionError'), err);
+            console.error(i18n.translate('serialConnectionError'), err); // Translated error message
             return false;
         }
     }
@@ -57,7 +57,7 @@ export class DeviceManager {
      */
     async connectBluetooth() {
         if (!("bluetooth" in navigator)) {
-            alert(i18n.translate('webBluetoothNotSupported'));
+            alert(i18n.translate('webBluetoothNotSupported')); // Translated alert
             return false;
         }
 
@@ -75,7 +75,7 @@ export class DeviceManager {
                 const infoService = await server.getPrimaryService('device_information');
                 const fwChar = await infoService.getCharacteristic('firmware_revision_string');
                 const decoder = new TextDecoder('utf-8');
-                const fwVal = await fwChar.readValue();
+                const fwVal = await fwChar.readValue(); // Firmware string itself is not translated
                 const fwStr = decoder.decode(fwVal); // Firmware string itself is not translated
                 if (this.onStatus) this.onStatus({ type: 'firmware', value: fwStr });
             } catch (e) {
@@ -103,9 +103,9 @@ export class DeviceManager {
             
             return true;
         } catch (err) {
-            console.error(i18n.translate('bluetoothConnectionError'), err);
-            if (err.name === 'SecurityError') alert(i18n.translate('pairingFailed'));
-            else alert(`${i18n.translate('btConnectionFailed')} ${err.message}`);
+            console.error(i18n.translate('bluetoothConnectionError'), err); // Translated error message
+            if (err.name === 'SecurityError') alert(i18n.translate('pairingFailed')); // Translated alert
+            else alert(`${i18n.translate('btConnectionFailed')} ${err.message}`); // Translated alert
             return false;
         }
     }
@@ -159,7 +159,7 @@ export class DeviceManager {
         const contactSupported = (flags & 0x02) !== 0;
         const contactDetected = (flags & 0x04) !== 0;
         if (contactSupported && !contactDetected) {
-            if (this.onStatus) this.onStatus({ type: i18n.translate('signalType'), value: 'poor_contact' });
+            if (this.onStatus) this.onStatus({ type: i18n.translate('signalType'), value: 'poor_contact' }); // Translated signal type
         }
         
         // Check for RR intervals (Bit 4 set)

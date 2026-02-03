@@ -1,5 +1,6 @@
 import { ChartInteractions } from './ChartInteractions.js';
 import { i18n } from '../utils/Localization.js';
+import { i18n } from '../utils/Localization.js';
 
 export class ChartManager {
     constructor(canvasId) {
@@ -20,7 +21,7 @@ export class ChartManager {
         
         // Main Dataset (Working RR)
         datasets.push({
-            label: isAnalyzeMode ? `${i18n.translate('raw')} (${i18n.translate('editable')})` : i18n.translate('heartRateBPM'),
+            label: isAnalyzeMode ? `${i18n.translate('raw')} (${i18n.translate('editable')})` : i18n.translate('heartRateBPM'), // Translated label
             data: data.map(rr => Math.round(60000/rr)),
             borderColor: isAnalyzeMode ? '#e74c3c' : '#3498db',
             backgroundColor: isAnalyzeMode ? 'rgba(231, 76, 60, 0.1)' : 'rgba(52, 152, 219, 0.1)',
@@ -36,7 +37,7 @@ export class ChartManager {
         // Smoothed Dataset (Only in Analyze Mode)
         if (isAnalyzeMode && smoothedData) {
             datasets.push({
-                label: `${i18n.translate('smoothed')} / ${i18n.translate('filtered')}`,
+                label: `${i18n.translate('smoothed')} / ${i18n.translate('filtered')}`, // Translated label
                 data: smoothedData.map(rr => Math.round(60000/rr)),
                 borderColor: '#3498db',
                 borderWidth: 2,
@@ -72,7 +73,7 @@ export class ChartManager {
                     }
                 },
                 plugins: {
-                    zoom: {
+                    zoom: { // Chart.js zoom plugin doesn't have i18n for its internal labels
                         zoom: {
                             wheel: { enabled: true },
                             pinch: { enabled: true },

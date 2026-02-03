@@ -2,6 +2,7 @@ import { Session } from './js/modules/logic/Session.js';
 import { ChartManager } from './js/modules/view/ChartManager.js';
 import { ATDSAnalyzer } from './js/modules/logic/ATDSAnalyzer.js';
 import { DeviceManager } from './js/modules/io/DeviceManager.js';
+import { UIManager } from './js/modules/logic/UIManager.js'; // Import UIManager
 import { PhysioMetrics } from './js/modules/logic/PhysioMetrics.js';
 import { i18n } from './js/modules/utils/Localization.js';
 import { AdvancedCharts } from './js/modules/view/AdvancedCharts.js';
@@ -15,6 +16,7 @@ class App {
             (data) => this.handleLiveData(data),
             (status) => this.handleDeviceStatus(status)
         );
+        this.uiManager = new UIManager(); // Initialize UIManager
         this.isLive = false;
         this.isAnalyzeMode = false;
         this.isMultiView = false;
@@ -26,6 +28,7 @@ class App {
         this.maxSessionRR = 0;
         this.lastDataTime = 0;
         this.signalWatchdog = null;
+        this.darkModeEnabled = false; // Track dark mode state
         this.currentSignalQuality = 'none'; // To store current signal quality for re-translation
 
         this.bindEvents();
@@ -34,7 +37,11 @@ class App {
     bindEvents() {
         // File Loading
         const fileInput = document.getElementById('fileInput');
-        // Apply initial translations after DOM is ready
+        // Apply initial translations after DOM is ready and UIManager has injected elements
+        document.addEventListener('DOMContentLoaded', () => {
+            this.applyTheme(); // Apply theme on load
+            i18n.applyTranslations();
+        });
         document.addEventListener('DOMContentLoaded', () => i18n.applyTranslations());
         if (fileInput) {
             fileInput.addEventListener('change', (e) => this.handleFileLoad(e));
@@ -59,10 +66,10 @@ class App {
         const analyzeBtn = document.getElementById('analyzeBtn');
         if (analyzeBtn) analyzeBtn.addEventListener('click', () => this.updateAnalysis());
 
-        // Analyze Mode Toggle
-        const btnAnalyzeMode = document.getElementById('btnAnalyzeMode');
-        if (btnAnalyzeMode) btnAnalyzeMode.addEventListener('click', () => this.toggleAnalyzeMode());
-        
+        // Analyze Mode Toggle (injected by UIManager)
+        document.addEventListener('click', (e) => { if (e.target.id === 'btnAnalyzeMode') this.toggleAnalyzeMode(); });
+
+        // Zoom Controls (injected by UIManager)
         // Zoom Controls
         const btnResetZoom = document.getElementById('btnResetZoom');
         if (btnResetZoom) btnResetZoom.addEventListener('click', () => this.chartManager.resetZoom());
@@ -71,21 +78,20 @@ class App {
         const btnMultiView = document.getElementById('btnMultiView');
         if (btnMultiView) btnMultiView.addEventListener('click', () => this.toggleMultiView());
 
-        // Reporting Buttons
+        // Reporting Buttons (injected by UIManager)
         const saveAtdsBtn = document.getElementById('saveAtdsBtn');
         if (saveAtdsBtn) saveAtdsBtn.addEventListener('click', () => this.saveSession());
-
         const saveTxtBtn = document.getElementById('saveTxtBtn');
         if (saveTxtBtn) saveTxtBtn.addEventListener('click', () => this.exportTxt());
-
         const excelBtn = document.getElementById('excelBtn');
         if (excelBtn) excelBtn.addEventListener('click', () => this.exportExcel());
+        document.addEventListener('click', (e) => { if (e.target.id === 'pdfBtn') this.exportPdf(); });
+        document.addEventListener('click', (e) => { if (e.target.id === 'copyBtn') this.copySummary(); });
 
-        const pdfBtn = document.getElementById('pdfBtn');
-        if (pdfBtn) pdfBtn.addEventListener('click', () => this.exportPdf());
-
-        const copyBtn = document.getElementById('copyBtn');
-        if (copyBtn) copyBtn.addEventListener('click', () => this.copySummary());
+        // Device Connection (injected by UIManager)
+        document.addEventListener('click', (e) => { if (e.target.id === 'btnConnectSerial') this.device.connect(); });
+        document.addEventListener('click', (e) => { if (e.target.id === 'btnConnectBT') this.device.connectBluetooth(); });
+        document.addEventListener('click', (e) => { if (e.target.id === 'btnLiveToggle') this.toggleLiveMode(); });
 
         // Optional Controls (Check existence)
         const btnResetAT = document.getElementById('btnResetAT');
@@ -100,24 +106,16 @@ class App {
         const btnCropData = document.getElementById('btnCropData');
         if (btnCropData) btnCropData.addEventListener('click', () => this.handleCrop());
 
-        // Device Connection
-        const btnConnect = document.getElementById('btnConnectSerial');
-        if (btnConnect) btnConnect.addEventListener('click', () => this.device.connect());
-
-        const btnConnectBT = document.getElementById('btnConnectBT');
-        if (btnConnectBT) btnConnectBT.addEventListener('click', () => this.device.connectBluetooth());
-
-        const btnLive = document.getElementById('btnLiveToggle');
-        if (btnLive) btnLive.addEventListener('click', () => this.toggleLiveMode());
-
+        // The following buttons are now injected by UIManager.js, so their event listeners need to be attached
+        // after injection, or use event delegation. The current implementation uses direct binding if element exists.
         const btnSave = document.getElementById('btnSaveSession');
         if (btnSave) btnSave.addEventListener('click', () => this.saveSession());
 
         const btnAdvCharts = document.getElementById('btnShowAdvanced');
         if (btnAdvCharts) btnAdvCharts.addEventListener('click', () => this.renderAdvancedCharts());
 
-        const btnExportPoincare = document.getElementById('btnExportPoincare');
-        if (btnExportPoincare) btnExportPoincare.addEventListener('click', () => this.exportPoincareImage());
+        // const btnExportPoincare = document.getElementById('btnExportPoincare');
+        // if (btnExportPoincare) btnExportPoincare.addEventListener('click', () => this.exportPoincareImage());
 
         // const btnExportHistogram = document.getElementById('btnExportHistogram');
         // if (btnExportHistogram) btnExportHistogram.addEventListener('click', () => this.exportHistogramImage());
@@ -132,7 +130,7 @@ class App {
         const btnSaveSettings = document.getElementById('btnSaveSettings');
         if (btnSaveSettings) btnSaveSettings.addEventListener('click', () => this.saveSettings());
 
-        // Action Menu Handler (from UIManager)
+        // Action Menu Handler (injected by UIManager)
         // The onchange event is set in UIManager, delegating to window.app.handleAction
 
         // Close modal on outside click
@@ -140,6 +138,12 @@ class App {
             const modal = document.getElementById('settingsModal');
             if (e.target === modal) this.closeSettings();
         });
+
+        // Initial injection of UIManager elements
+        this.uiManager.injectExtendedUI();
+        this.uiManager.injectActionMenu();
+        this.uiManager.injectControlButtons(); // Ensure control buttons are injected
+        this.uiManager.setupToggles();
     }
 
     handleFileLoad(event) {
@@ -179,6 +183,7 @@ class App {
                     if (json.profile) { // Ensure profile is loaded before updating UI
                         this.session.setProfile(json.profile);
                         if (json.profile.age) document.getElementById('age').value = json.profile.age;
+                        if (json.profile.weight) document.getElementById('weight').value = json.profile.weight; // Ensure weight is updated
                         if (json.profile.weight) document.getElementById('weight').value = json.profile.weight;
                     }
 
@@ -279,7 +284,7 @@ class App {
 
             const elVO2 = document.getElementById('dispVO2');
             if (elVO2) {
-                elVO2.innerHTML = `${currentVO2} ${i18n.translate('mlKgMinShort')}`;
+                elVO2.innerText = `${currentVO2} ${i18n.translate('mlKgMinShort')}`;
                 const elVO2Class = document.getElementById('dispVO2Class');
                 if (elVO2Class) elVO2Class.innerText = i18n.translate('liveMetabolicRate');
             }
@@ -320,6 +325,7 @@ class App {
             if(document.getElementById('dispTiTe')) document.getElementById('dispTiTe').innerText = results.tiTe; // Ti/Te is a ratio, no unit
             
             if(document.getElementById('dispBreathRate')) {
+                // The brClass is already translated in PhysioMetrics, so just use it
                 const brClass = PhysioMetrics.evaluateBreathRate(results.breathRate);
                 document.getElementById('dispBreathRate').innerHTML = `${results.breathRate} <span style="font-size:0.6em; color:#7f8c8d">(${i18n.translate(brClass.toLowerCase())})</span>`;
             }
@@ -336,16 +342,20 @@ class App {
             const vo2 = PhysioMetrics.calculateVO2Max(age, gender, rhr);
             const vo2Class = PhysioMetrics.evaluateVO2(vo2, age, gender);
             
-            if(document.getElementById('dispVO2')) {
-                document.getElementById('dispVO2').innerText = `${vo2 || "--"} ${i18n.translate('mlKgMinShort')}`;
-                document.getElementById('dispVO2Class').innerText = i18n.translate(vo2Class.toLowerCase());
+            if(document.getElementById('dispVO2')) { // This is the VO2 Max card
+                document.getElementById('dispVO2').innerText = `${vo2 || "--"}`; // Unit is in small tag
+                document.getElementById('dispVO2Class').innerText = i18n.translate(vo2Class.toLowerCase()); // Class is in small tag
+            }
+
+            if(document.getElementById('dispSDNNRMSSD')) { // SDNN/RMSSD card
+                document.getElementById('dispSDNNRMSSD').innerText = `${results.sdnn} / ${results.rmssd}`;
             }
 
             // Update Narrative Report with Age Group Comparison
             // This section will be replaced if StansPage is rendered
             const reportContent = document.getElementById('reportContent');
             if (reportContent) {
-                let html = i18n.translate('analysisFor', { age: age, gender: i18n.translate(gender) }) + '<br>';
+                let html = i18n.translate('analysisFor', { age: age, gender: i18n.translate(gender) }) + '<br>'; // Gender is already translated in i18n.translate(gender)
                 html += `• ${i18n.translate('hrvAmplitude', { value: results.hrvAmp, class: i18n.translate(PhysioMetrics.evaluateHRV(results.hrvAmp, age).toLowerCase()) })}<br>`;
                 html += `• ${i18n.translate('sdnnRmssd', { sdnn: results.sdnn, rmssd: results.rmssd })}<br>`;
                 html += `• ${i18n.translate('vo2MaxEstimate', { value: vo2 || '--', class: i18n.translate(vo2Class.toLowerCase()) })}<br>`;
@@ -357,11 +367,10 @@ class App {
             this.updateZoneTable(at);
 
             // Show Results Area
-            const resultsArea = document.getElementById('resultsArea');
-            // This will be managed by toggleDashboardVisibility
-            if (resultsArea) resultsArea.classList.remove('hidden');
+            // The resultsArea visibility is managed by toggleDashboardVisibility
+            // The individual dashboard components are managed by toggleDashboardVisibility
             
-            // Show Export Buttons
+            // Show Export Buttons (these are outside the resultsArea, so manage directly)
             ['saveAtdsBtn', 'saveTxtBtn', 'excelBtn', 'pdfBtn', 'copyBtn', 'btnAnalyzeMode', 'btnResetZoom', 'btnMultiView', 'btnCropData'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('hidden');
@@ -395,7 +404,7 @@ class App {
     toggleAnalyzeMode() {
         this.isAnalyzeMode = !this.isAnalyzeMode;
         const btn = document.getElementById('btnAnalyzeMode');
-        if (btn) {
+        if (btn) { // This button is now injected by UIManager
             btn.classList.toggle('btn-active', this.isAnalyzeMode);
             btn.innerText = this.isAnalyzeMode ? "Exit Analyze Mode" : "Analyze Chart";
             // Change button style to indicate active state
@@ -418,7 +427,7 @@ class App {
         const existing = document.getElementById('chartContextMenu');
         if (existing) existing.remove();
 
-        const menu = document.createElement('div');
+        const menu = document.createElement('div'); // This menu is dynamically created
         menu.id = 'chartContextMenu';
         menu.style.position = 'absolute';
         const evt = event.native || event;
@@ -432,9 +441,9 @@ class App {
         menu.style.zIndex = 1000;
 
         menu.innerHTML = `
-            <div style="font-weight:bold; border-bottom:1px solid #eee; padding:3px;">Point #${index}</div>
-            <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer;" onclick="window.app.editPoint(${index})">Edit Value</button>
-            <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer;" onclick="window.app.deletePoint(${index})">Delete Point</button>
+            <div style="font-weight:bold; border-bottom:1px solid #eee; padding:3px;">${i18n.translate('point')} #${index}</div>
+            <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer;" onclick="window.app.editPoint(${index})">${i18n.translate('editPoint')}</button>
+            <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer;" onclick="window.app.deletePoint(${index})">${i18n.translate('deletePoint')}</button>
             <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer; color:red;" onclick="this.parentElement.remove()">Cancel</button>
         `;
 
@@ -453,7 +462,7 @@ class App {
     editPoint(index) {
         const currentRR = this.session.workingRR[index];
         const currentBPM = Math.round(60000/currentRR);
-        const newBPM = prompt(i18n.translate('editBPM', { index: index }), currentBPM);
+        const newBPM = prompt(i18n.translate('editBPM', { index: index }), currentBPM); // Translated prompt
         
         if (newBPM !== null && !isNaN(newBPM) && newBPM > 0) {
             const newRR = Math.round(60000 / parseInt(newBPM));
@@ -464,7 +473,7 @@ class App {
     }
 
     deletePoint(index) {
-        if(confirm(i18n.translate('deletePointConfirm', { index: index }))) {
+        if(confirm(i18n.translate('deletePointConfirm', { index: index }))) { // Translated confirmation
             this.session.workingRR.splice(index, 1);
             this.refreshChart();
         }
@@ -474,12 +483,12 @@ class App {
     updateZoneTable(at) {
         const table = document.getElementById('zoneTable');
         if (!table || !at) return;
-
+        
         const zones = [ // Use i18n keys for name and desc
             { nameKey: "recovery", range: `< ${Math.round(at * 0.8)}`, descKey: "recoveryDesc", color: "#2ecc71" },
             { nameKey: "aerobic", range: `${Math.round(at * 0.8)} - ${Math.round(at * 0.9)}`, descKey: "aerobicDesc", color: "#3498db" },
             { nameKey: "tempo", range: `${Math.round(at * 0.9)} - ${Math.round(at * 0.95)}`, descKey: "tempoDesc", color: "#9b59b6" },
-            { nameKey: "threshold", range: `${Math.round(at * 0.95)} - ${Math.round(at)}`, descKey: "thresholdDesc", color: "#f1c40f" },
+            { nameKey: "threshold", range: `${Math.round(at * 0.95)} - ${Math.round(at)}`, descKey: "thresholdDesc", color: "#f1c40f" }, // Corrected descKey
             { nameKey: "anaerobic", range: `> ${Math.round(at)}`, descKey: "anaerobicDesc", color: "#e74c3c" }
         ];
 
@@ -497,7 +506,7 @@ class App {
         zones.forEach(z => {
             html += `
                 <tr>
-                    <td style="border-left: 5px solid ${z.color}; font-weight:bold;">${i18n.translate(z.nameKey)}</td>
+                    <td style="border-left: 5px solid ${z.color}; font-weight:bold;">${i18n.translate(z.nameKey)}</td> // Translated zone name
                     <td>${z.range}</td>
                     <td>${i18n.translate(z.descKey)}</td>
                 </tr>
@@ -511,7 +520,7 @@ class App {
     exportTxt() {
         const data = this.session.workingRR;
         if (!data || data.length === 0) {
-            alert(i18n.translate('noDataToExport'));
+            alert(i18n.translate('noDataToExport')); // Translated alert
             return;
         }
         const content = data.join('\n');
@@ -527,7 +536,7 @@ class App {
     exportExcel() {
         const data = this.session.workingRR;
         if (!data || data.length === 0) {
-            alert(i18n.translate('noDataToExport'));
+            alert(i18n.translate('noDataToExport')); // Translated alert
             return;
         }
 
@@ -539,7 +548,7 @@ class App {
         const vo2 = PhysioMetrics.calculateVO2Max(profile.age, profile.gender, rhr);
         const vo2Class = PhysioMetrics.evaluateVO2(vo2, profile.age, profile.gender);
 
-        let csv = `${i18n.translate('atdsReport')}\n${i18n.translate('date')},${new Date().toLocaleString()}\n\n`;
+        let csv = `${i18n.translate('atdsReport')}\n${i18n.translate('date')},${new Date().toLocaleString()}\n\n`; // Translated headers
         csv += `${i18n.translate('userProfile')}\n${i18n.translate('ageShort')},${profile.age}\n${i18n.translate('weightShort')},${profile.weight}\n${i18n.translate('genderShort')},${i18n.translate(profile.gender)}\n\n`;
         csv += `${i18n.translate('analysisSummary')}\n${i18n.translate('avgHR')},${results.avgHR} ${i18n.translate('bpmShort')}\n${i18n.translate('breathRateShort')},${results.breathRate} ${i18n.translate('brMin')}\n${i18n.translate('hrvAmplitudeExcel')},${results.hrvAmp} ${i18n.translate('msShort')}\n${i18n.translate('sdnn')},${results.sdnn} ${i18n.translate('msShort')}\n${i18n.translate('rmssd')},${results.rmssd} ${i18n.translate('msShort')}\n${i18n.translate('vo2MaxEstExcel')},${vo2 || '--'} ${i18n.translate('mlKgMinShort')} (${i18n.translate(vo2Class.toLowerCase())})\n${i18n.translate('tiTeRatioExcel')},${results.tiTe}\n\n`;
         csv += `${i18n.translate('beatData')}\n${i18n.translate('index')},${i18n.translate('rrInterval')},${i18n.translate('heartRateBPMExcel')}\n`;
@@ -573,7 +582,7 @@ class App {
                 if (controls) controls.style.display = '';
             }).catch(err => {
                 console.error(err);
-                alert(i18n.translate('errorGeneratingPDF'));
+                alert(i18n.translate('errorGeneratingPDF')); // Translated alert
                 if (controls) controls.style.display = '';
             });
         } else {
@@ -592,7 +601,7 @@ class App {
                      `--------------------------\n` + // This separator is not translated
                      `${i18n.translate('avgHeartRateSummary')} ${getVal('dispAvgHR')} ${i18n.translate('bpmShort')}\n` +
                      `${i18n.translate('tiTeRatioSummary')} ${getVal('dispTiTe')}\n` +
-                     `${i18n.translate('breathRateSummary')} ${getVal('dispBreathRate')} ${i18n.translate('brMin')}\n` +
+                     `${i18n.translate('breathRateSummary')} ${getVal('dispBreathRate')} ${i18n.translate('brMin')}\n` + // Translated unit
                      `${i18n.translate('hrvAmplitudeSummary')} ${getVal('dispHrvAmp')} ${i18n.translate('msShort')}\n` +
                      `${i18n.translate('vo2MaxEstSummary')} ${getVal('dispVO2')} (${getVal('dispVO2Class')})\n`;
                      
@@ -619,7 +628,7 @@ class App {
 
         const btn = document.getElementById('btnLiveToggle');
         if (btn) {
-            btn.innerText = this.isLive ? i18n.translate('stopLiveFeed') : i18n.translate('startLiveFeed');
+            btn.innerText = this.isLive ? i18n.translate('stopLiveFeed') : i18n.translate('startLiveFeed'); // Translated button text
             btn.classList.toggle('btn-danger');
         }
     }
@@ -634,13 +643,13 @@ class App {
         this.signalWatchdog = setInterval(() => {
             const diff = Date.now() - this.lastDataTime;
             if (diff > 5000) {
-                this.currentSignalQuality = 'poor';
+                this.currentSignalQuality = 'poor'; // Store quality for re-translation
                 this.updateSignalUI('poor', i18n.translate('signalNoSignal'));
             } else if (diff > 2000) {
-                this.currentSignalQuality = 'fair';
+                this.currentSignalQuality = 'fair'; // Store quality for re-translation
                 this.updateSignalUI('fair', i18n.translate('signalWeak'));
             } else {
-                this.currentSignalQuality = 'good';
+                this.currentSignalQuality = 'good'; // Store quality for re-translation
                 this.updateSignalUI('good', i18n.translate('signalExcellent'));
             }
         }, 1000);
@@ -657,7 +666,7 @@ class App {
     updateSignalUI(quality, text) {
         const dot = document.getElementById('signalDot');
         const txt = document.getElementById('signalText');
-        this.currentSignalQuality = quality; // Store for re-translation
+        this.currentSignalQuality = quality; // Store quality for re-translation
         
         if (dot) {
             dot.className = 'signal-dot'; // reset
@@ -667,20 +676,34 @@ class App {
     }
 
     toggleDashboardVisibility(show) {
-        const resultsArea = document.getElementById('resultsArea');
-        const chartRow = document.querySelector('.chart-row');
-        const reportText = document.querySelector('.report-text');
-        const dashboardCards = document.querySelector('.dashboard');
+        const resultsArea = document.getElementById('resultsArea'); // The main container for all dashboard content
+        const dashboardMetrics = document.getElementById('dashboardMetrics'); // The stat cards
+        const chartRow = document.querySelector('.chart-row'); // The main chart and secondary chart wrapper
+        const reportText = document.querySelector('.report-text'); // The analysis summary and zone table
 
-        if (resultsArea) {
+        // Ensure all relevant elements exist before attempting to toggle
+        if (resultsArea && dashboardMetrics && chartRow && reportText) {
             if (show) {
-                resultsArea.classList.remove('hidden');
+                // If the dashboard structure was cleared (e.g., by StansPage), re-inject it
+                if (!document.getElementById('dashboardMetrics')) { // Check if dashboardMetrics is missing from DOM
+                    this.uiManager.injectDashboardStructure(resultsArea);
+                }
+
+                resultsArea.classList.remove('hidden'); // Make the overall content area visible
+                dashboardMetrics.classList.remove('hidden'); // Show stat cards
+                chartRow.classList.remove('hidden'); // Show chart row
+                reportText.classList.remove('hidden'); // Show report text
+
                 // Re-render charts if data exists and they were hidden
                 if (this.session.workingRR.length > 0 && !this.chartManager.chart) {
                     this.refreshChart();
                 }
             } else {
-                resultsArea.classList.add('hidden');
+                dashboardMetrics.classList.add('hidden'); // Hide stat cards
+                chartRow.classList.add('hidden'); // Hide chart row
+                reportText.classList.add('hidden'); // Hide report text
+                resultsArea.classList.add('hidden'); // Hide the overall content area
+
                 // Destroy charts to free up memory when not in dashboard view
                 if (this.chartManager.chart) this.chartManager.chart.destroy();
                 this.chartManager.chart = null; // Ensure it's nullified
@@ -708,7 +731,7 @@ class App {
         const elUnit = document.getElementById('settingWeightUnit');
         if (elUnit) elUnit.value = unit;
 
-        const proto = localStorage.getItem('atds_protocol') || 'serial';
+        const proto = localStorage.getItem('atds_protocol') || 'serial'; // Protocol is not translated
         const elProto = document.getElementById('settingProtocol');
         if (elProto) elProto.value = proto; // This is for device protocol, not language
 
@@ -716,6 +739,7 @@ class App {
         const elLang = document.getElementById('settingLanguage');
         if (elLang) elLang.value = lang;
     }
+    
 
     closeSettings() {
         const modal = document.getElementById('settingsModal');
@@ -727,7 +751,7 @@ class App {
         if (elUnit) {
             localStorage.setItem('atds_weight_unit', elUnit.value);
             // Update UI label
-            const weightGroup = document.getElementById('weight')?.parentElement;
+            const weightGroup = document.getElementById('weight')?.parentElement; // Update label dynamically
             if (weightGroup) weightGroup.querySelector('label').innerText = `Weight (${elUnit.value})`;
             // Re-apply translations to update weight label if it's part of i18n
             i18n.applyTranslations();
@@ -737,18 +761,32 @@ class App {
         if (elProto) {
             localStorage.setItem('atds_protocol', elProto.value);
         }
-        
+
         const elLang = document.getElementById('settingLanguage');
         if (elLang) {
             i18n.setLanguage(elLang.value); // Update language and re-apply translations
         }
+
+        const elDarkMode = document.getElementById('settingDarkMode');
+        if (elDarkMode) {
+            const isDarkMode = elDarkMode.checked;
+            localStorage.setItem('atds_dark_mode', isDarkMode ? 'true' : 'false');
+            this.darkModeEnabled = isDarkMode;
+            this.applyTheme(); // Apply the new theme immediately
+        }
+
         this.closeSettings();
+    }
+
+    applyTheme() {
+        this.darkModeEnabled = localStorage.getItem('atds_dark_mode') === 'true';
+        document.body.classList.toggle('dark-mode', this.darkModeEnabled);
     }
 
     handleDeviceStatus(status) {
         if (status.type === 'battery') {
             this.updateBatteryLevel(status.value);
-        } else if (status.type === i18n.translate('firmwareType')) {
+        } else if (status.type === 'firmware') { // Firmware type is a literal string, not translated
             console.log("Device Firmware:", status.value);
             const elFw = document.getElementById('settingFirmware');
             if (elFw) elFw.innerText = status.value;
@@ -780,7 +818,7 @@ class App {
         // Auto-stop if critical
         if (this.isLive && percentage < 5) {
             this.toggleLiveMode(); // This will also update the button text
-            alert(i18n.translate('batteryCritical'));
+            alert(i18n.translate('batteryCritical')); // Translated alert
         }
     }
 

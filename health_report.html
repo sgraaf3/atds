@@ -34,35 +34,25 @@
             <input type="file" id="fileInput" accept=".txt,.csv,.atds">
         </div>
         <div class="input-group" data-i18n-group="weight">
-            <label data-i18n="weight" data-i18n-suffix="(kg)">Weight (kg)</label>
-            <input type="number" id="weight" value="75">
+            <label data-i18n="weight" data-i18n-suffix="(kg)">Weight (kg) <span class="tooltip-icon" data-tooltip-i18n="weightTooltip">?</span></label>
+            <input type="number" id="weight" value="75" data-tooltip-i18n="weightTooltip">
         </div>
         <div class="input-group" data-i18n-group="age">
-            <label data-i18n="age" data-i18n-suffix="(years)">Age (years)</label>
-            <input type="number" id="age" value="30">
+            <label data-i18n="age" data-i18n-suffix="(years)">Age (years) <span class="tooltip-icon" data-tooltip-i18n="ageTooltip">?</span></label>
+            <input type="number" id="age" value="30" data-tooltip-i18n="ageTooltip">
         </div>
         <div class="input-group" data-i18n-group="gender">
-            <label data-i18n="gender">Gender</label>
-            <select id="gender">
+            <label data-i18n="gender">Gender <span class="tooltip-icon" data-tooltip-i18n="genderTooltip">?</span></label>
+            <select id="gender" data-tooltip-i18n="genderTooltip">
                 <option value="male" data-i18n="male">Male</option>
                 <option value="female" data-i18n="female">Female</option>
             </select>
         </div>
         <div class="input-group" style="grid-column: span 2;" data-i18n-group="deviceConnection">
             <label data-i18n="deviceConnection">Device Connection</label>
-            <button id="btnConnectSerial" class="btn-secondary" style="margin-bottom: 5px;" data-i18n="connectUSBDongle">Connect USB Dongle</button>
-            <button id="btnConnectBT" class="btn-secondary" data-i18n="connectBluetoothLE">Connect Bluetooth LE</button>
+            <button id="btnConnectSerial" class="btn-secondary" style="margin-bottom: 5px;" data-i18n="connectUSBDongle" data-tooltip-i18n="connectUSBDongleTooltip">Connect USB Dongle</button>
+            <button id="btnConnectBT" class="btn-secondary" data-i18n="connectBluetoothLE" data-tooltip-i18n="connectBluetoothLETooltip">Connect Bluetooth LE</button>
         </div>
-        <button id="analyzeBtn" data-tooltip-i18n="generateReportTooltip" data-i18n="generateReport">Generate Report</button>
-        <button id="btnAnalyzeMode" class="btn-secondary hidden" data-tooltip-i18n="analyzeChartTooltip" data-i18n="analyzeChart">Analyze Chart</button>
-        <button id="btnResetZoom" class="btn-secondary hidden" data-tooltip-i18n="resetZoomTooltip" data-i18n="resetZoom">Reset Zoom</button>
-        <button id="btnMultiView" class="btn-secondary hidden" data-tooltip-i18n="multiViewTooltip" data-i18n="multiView">Multi-View</button>
-        <button id="btnCropData" class="btn-secondary hidden" data-tooltip-i18n="cropToViewTooltip" data-i18n="cropToView">Crop to View</button>
-        <button id="saveAtdsBtn" class="btn-secondary hidden" data-tooltip-i18n="saveATDSTooltip" data-i18n="saveATDS">Save ATDS</button>
-        <button id="saveTxtBtn" class="btn-secondary hidden" data-tooltip-i18n="saveTXTTooltip" data-i18n="saveTXT">Save TXT</button>
-        <button id="excelBtn" class="btn-secondary hidden" data-tooltip-i18n="saveExcelTooltip" data-i18n="saveExcel">Save Excel</button>
-        <button id="pdfBtn" class="btn-danger hidden" data-tooltip-i18n="exportPDFTooltip" data-i18n="exportPDF">Export PDF</button>
-        <button id="copyBtn" class="btn-secondary hidden" data-tooltip-i18n="copyTextTooltip" data-i18n="copyText">Copy Text</button>
     </div>
 
     <div id="resultsArea" class="hidden">
@@ -88,6 +78,7 @@
                 <small data-i18n="msRSA">ms (RSA)</small>
             </div>
             <!-- VO2 Max card is injected by UIManager.js -->
+            <!-- SDNN/RMSSD card is injected by UIManager.js -->
         </div>
 
         <div class="chart-row">
@@ -117,33 +108,37 @@
         <span class="close-modal">&times;</span>
         <h2 data-i18n="preferences">Preferences</h2>
         <div class="input-group" data-i18n-group="weightUnit">
-            <label data-i18n="weightUnit">Weight Unit</label>
-            <select id="settingWeightUnit">
+            <label data-i18n="weightUnit">Weight Unit <span class="tooltip-icon" data-tooltip-i18n="weightUnitTooltip">?</span></label>
+            <select id="settingWeightUnit" data-tooltip-i18n="weightUnitTooltip">
                 <option value="kg" data-i18n="kilograms">Kilograms (kg)</option>
                 <option value="lbs" data-i18n="pounds">Pounds (lbs)</option>
             </select>
         </div>
         <div class="input-group" data-i18n-group="deviceProtocol">
-            <label data-i18n="deviceProtocol">Device Protocol</label>
-            <select id="settingProtocol">
+            <label data-i18n="deviceProtocol">Device Protocol <span class="tooltip-icon" data-tooltip-i18n="deviceProtocolTooltip">?</span></label>
+            <select id="settingProtocol" data-tooltip-i18n="deviceProtocolTooltip">
                 <option value="serial" data-i18n="usbSerial">USB Serial (BM-USBCDC)</option>
                 <option value="ble" data-i18n="bluetoothLE">Bluetooth LE (BlueRobin)</option>
             </select>
         </div>
         <div class="input-group" data-i18n-group="language">
-            <label data-i18n="language">Language</label>
-            <select id="settingLanguage">
+            <label data-i18n="language">Language <span class="tooltip-icon" data-tooltip-i18n="languageTooltip">?</span></label>
+            <select id="settingLanguage" data-tooltip-i18n="languageTooltip">
                 <option value="en" data-i18n="english">English</option>
                 <option value="nl" data-i18n="dutch">Dutch (Nederlands)</option>
                 <option value="de" data-i18n="german">German (Deutsch)</option>
                 <option value="fr" data-i18n="french">French (Français)</option>
             </select>
         </div>
-        <div class="input-group" data-i18n-group="connectedDeviceFW">
-            <label data-i18n="connectedDeviceFW">Connected Device FW</label>
-            <div id="settingFirmware" style="padding: 10px; background: #eee; border-radius: 4px; font-size: 0.9em;" data-i18n-default="--">--</div>
+        <div class="input-group" data-i18n-group="darkMode">
+            <label data-i18n="darkMode">Dark Mode <span class="tooltip-icon" data-tooltip-i18n="darkModeTooltip">?</span></label>
+            <input type="checkbox" id="settingDarkMode" style="width: auto; margin-top: 5px;" data-tooltip-i18n="darkModeTooltip">
         </div>
-        <button id="btnSaveSettings" class="btn-secondary" style="margin-top: 15px; width: 100%;" data-i18n="savePreferences">Save Preferences</button>
+        <div class="input-group" data-i18n-group="connectedDeviceFW">
+            <label data-i18n="connectedDeviceFW">Connected Device FW <span class="tooltip-icon" data-tooltip-i18n="connectedDeviceFWTooltip">?</span></label>
+            <div id="settingFirmware" style="padding: 10px; background: #eee; border-radius: 4px; font-size: 0.9em;" data-i18n-default="--" data-tooltip-i18n="connectedDeviceFWTooltip">--</div>
+        </div>
+        <button id="btnSaveSettings" class="btn-secondary" style="margin-top: 15px; width: 100%;" data-i18n="savePreferences" data-tooltip-i18n="savePreferencesTooltip">Save Preferences</button>
     </div>
 </div>
 

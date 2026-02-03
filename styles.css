@@ -1,9 +1,24 @@
 :root {
     --primary: #2c3e50;
     --accent: #3498db;
-    --bg: #f4f7f6;
-    --card-bg: #ffffff;
-    --text: #333333;
+    --bg: #f4f7f6; /* Light mode background */
+    --card-bg: #ffffff; /* Light mode card background */
+    --text: #333333; /* Light mode text */
+    --text-secondary: #7f8c8d;
+    --border-color: #eee;
+    --input-bg: #ffffff;
+    --input-border: #ddd;
+}
+.dark-mode {
+    --primary: #ecf0f1; /* Dark mode primary (light text) */
+    --accent: #3498db; /* Accent can remain consistent or be adjusted */
+    --bg: #2c3e50; /* Dark mode background */
+    --card-bg: #34495e; /* Dark mode card background */
+    --text: #ecf0f1; /* Dark mode text */
+    --text-secondary: #bdc3c7;
+    --border-color: #4a627a;
+    --input-bg: #4a627a;
+    --input-border: #5e7994;
 }
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -20,6 +35,386 @@ body {
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
+header {
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+h1 { margin: 0; color: var(--primary); }
+.subtitle { color: var(--text-secondary); font-size: 0.9em; }
+
+/* Input Section */
+.controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    background: var(--card-bg); /* Use card-bg for controls background */
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+.input-group { display: flex; flex-direction: column; }
+label { font-weight: 600; margin-bottom: 8px; font-size: 0.9em; color: var(--text-secondary); }
+input[type="number"], input[type="text"], select {
+    padding: 10px;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: var(--input-bg);
+    color: var(--text);
+}
+input[type="checkbox"] { /* Specific styling for checkboxes */
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent); /* Changes checkbox color */
+}
+
+button {
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    margin-top: auto;
+    transition: background 0.2s;
+}
+button:hover { background-color: #2980b9; }
+.btn-secondary { background-color: #95a5a6; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: auto; }
+.btn-secondary:hover { background-color: #7f8c8d; }
+.btn-danger { background-color: #e74c3c; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: auto; }
+.btn-danger:hover { background-color: #c0392b; }
+.btn-active { /* For active toggle buttons */
+    background-color: var(--accent);
+    color: white;
+}
+
+/* Dashboard Grid */
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Adjusted for more flexibility */
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+.stat-value { font-size: 2em; font-weight: bold; color: var(--accent); margin: 10px 0; }
+.stat-label { font-size: 0.85em; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+
+/* Charts */
+.chart-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.chart-wrapper {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    flex: 1;
+    height: 400px;
+}
+
+/* Detailed Report */
+.report-text {
+    background: var(--card-bg);
+    padding: 25px;
+    border-left: 5px solid var(--accent);
+    border-radius: 4px;
+    line-height: 1.6;
+    color: var(--text);
+}
+.zone-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+.zone-table th, .zone-table td {
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    text-align: left;
+}
+.zone-table th { background-color: var(--bg); color: var(--text); } /* Adjusted for theme */
+
+.hidden { display: none !important; } /* Use !important to ensure it overrides other styles */
+
+/* Tooltips */
+.tooltip-icon {
+    cursor: help;
+    color: var(--text-secondary);
+    margin-left: 4px;
+    font-size: 0.9em;
+    position: relative; /* Needed for positioning the tooltip text */
+    display: inline-block; /* Allows it to sit next to text */
+}
+[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    background: #333;
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 100;
+    width: 200px;
+    transform: translateY(-100%);
+    margin-top: -10px;
+    left: 50%; /* Center tooltip horizontally */
+    transform: translateX(-50%) translateY(-100%);
+    white-space: pre-wrap; /* Allow line breaks in tooltips */
+}
+
+/* Settings Modal */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    color: var(--text);
+    padding: 25px;
+    border-radius: 8px;
+    width: 300px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.close-modal:hover {
+    color: var(--primary);
+}
+
+/* Signal Quality */
+.signal-dot {
+    height: 10px;
+    width: 10px;
+    background-color: #bdc3c7;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+.signal-good { background-color: #2ecc71; box-shadow: 0 0 4px #2ecc71; }
+.signal-fair { background-color: #f1c40f; }
+.signal-poor { background-color: #e74c3c; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0.5; } }
+header {
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+h1 { margin: 0; color: var(--primary); }
+.subtitle { color: var(--text-secondary); font-size: 0.9em; }
+
+/* Input Section */
+.controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    background: var(--card-bg); /* Use card-bg for controls background */
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+.input-group { display: flex; flex-direction: column; }
+label { font-weight: 600; margin-bottom: 8px; font-size: 0.9em; color: var(--text-secondary); }
+input[type="number"], input[type="text"], select {
+    padding: 10px;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: var(--input-bg);
+    color: var(--text);
+}
+input[type="checkbox"] { /* Specific styling for checkboxes */
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent); /* Changes checkbox color */
+}
+
+button {
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    margin-top: auto;
+    transition: background 0.2s;
+}
+button:hover { background-color: #2980b9; }
+.btn-secondary { background-color: #95a5a6; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: auto; }
+.btn-secondary:hover { background-color: #7f8c8d; }
+.btn-danger { background-color: #e74c3c; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: auto; }
+.btn-danger:hover { background-color: #c0392b; }
+.btn-active { /* For active toggle buttons */
+    background-color: var(--accent);
+    color: white;
+}
+
+/* Dashboard Grid */
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Adjusted for more flexibility */
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+.stat-value { font-size: 2em; font-weight: bold; color: var(--accent); margin: 10px 0; }
+.stat-label { font-size: 0.85em; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+
+/* Charts */
+.chart-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.chart-wrapper {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    flex: 1;
+    height: 400px;
+}
+
+/* Detailed Report */
+.report-text {
+    background: var(--card-bg);
+    padding: 25px;
+    border-left: 5px solid var(--accent);
+    border-radius: 4px;
+    line-height: 1.6;
+    color: var(--text);
+}
+.zone-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+.zone-table th, .zone-table td {
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    text-align: left;
+}
+.zone-table th { background-color: var(--bg); color: var(--text); } /* Adjusted for theme */
+
+.hidden { display: none !important; } /* Use !important to ensure it overrides other styles */
+
+/* Tooltips */
+.tooltip-icon {
+    cursor: help;
+    color: var(--accent);
+    margin-left: 4px;
+    font-size: 0.9em;
+}
+[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    background: #333;
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 100;
+    width: 200px;
+    transform: translateY(-100%);
+    margin-top: -10px;
+    left: 50%; /* Center tooltip horizontally */
+    transform: translateX(-50%) translateY(-100%);
+    white-space: pre-wrap; /* Allow line breaks in tooltips */
+}
+
+/* Settings Modal */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    color: var(--text);
+    padding: 25px;
+    border-radius: 8px;
+    width: 300px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.close-modal:hover {
+    color: var(--primary);
+}
+
+/* Signal Quality */
+.signal-dot {
+    height: 10px;
+    width: 10px;
+    background-color: #bdc3c7;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+.signal-good { background-color: #2ecc71; box-shadow: 0 0 4px #2ecc71; }
+.signal-fair { background-color: #f1c40f; }
+.signal-poor { background-color: #e74c3c; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0.5; } }
 header {
     border-bottom: 2px solid #eee;
     padding-bottom: 20px;
