@@ -28,6 +28,8 @@ export class PhysioMetrics {
      * @returns {string} Classification (Poor, Fair, Good, Excellent, Superior)
      */
     static evaluateVO2(vo2, age, gender) {
+        if (!vo2) return "N/A";
+
         // Simplified ACSM Norms (ml/kg/min)
         const norms = {
             male: [

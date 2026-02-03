@@ -9,26 +9,27 @@ export class ChartInteractions {
      * @param {Function} onUpdate - Callback when line is moved (newValue) => void
      */
     static getATLinePlugin(initialValue, onUpdate) {
+        const pluginState = {
+            yValue: initialValue,
+            isDragging: false,
+            dragThreshold: 10
+        };
+
         return {
             id: 'atLinePlugin',
-            defaults: {
-                yValue: initialValue,
-                isDragging: false,
-                dragThreshold: 10 // pixels tolerance for grabbing the line
-            },
-            afterDraw: (chart, args, options) => {
+            afterDraw: (chart) => {
                 const { ctx, chartArea: { left, right }, scales: { y } } = chart;
                 
                 // Convert BPM value to pixel position
-                const yPixel = y.getPixelForValue(options.yValue);
+                const yPixel = y.getPixelForValue(pluginState.yValue);
 
                 // Don't draw if out of bounds
                 if (yPixel < chart.chartArea.top || yPixel > chart.chartArea.bottom) return;
 
                 ctx.save();
                 ctx.beginPath();
-                ctx.strokeStyle = options.isDragging ? 'rgba(231, 76, 60, 1)' : 'rgba(231, 76, 60, 0.7)';
-                ctx.lineWidth = options.isDragging ? 3 : 2;
+                ctx.strokeStyle = pluginState.isDragging ? 'rgba(231, 76, 60, 1)' : 'rgba(231, 76, 60, 0.7)';
+                ctx.lineWidth = pluginState.isDragging ? 3 : 2;
                 ctx.setLineDash([6, 4]);
                 ctx.moveTo(left, yPixel);
                 ctx.lineTo(right, yPixel);
@@ -37,33 +38,34 @@ export class ChartInteractions {
                 // Draw Label
                 ctx.fillStyle = 'rgba(231, 76, 60, 1)';
                 ctx.font = 'bold 12px Segoe UI';
-                ctx.fillText(`AT: ${Math.round(options.yValue)} BPM (Drag to Adjust)`, left + 10, yPixel - 8);
+                ctx.fillText(`AT: ${Math.round(pluginState.yValue)} BPM (Drag to Adjust)`, left + 10, yPixel - 8);
                 ctx.restore();
             },
-            afterEvent: (chart, args, options) => {
+            afterEvent: (chart, args) => {
                 const { event } = args;
                 const { y } = chart.scales;
                 const yValue = y.getValueForPixel(event.y);
                 
                 // Check hover proximity
-                const yPixel = y.getPixelForValue(options.yValue);
-                const isNear = Math.abs(event.y - yPixel) < options.dragThreshold;
+                const yPixel = y.getPixelForValue(pluginState.yValue);
+                const isNear = Math.abs(event.y - yPixel) < pluginState.dragThreshold;
 
                 if (event.type === 'mousedown' && isNear) {
-                    options.isDragging = true;
+                    pluginState.isDragging = true;
                     chart.canvas.style.cursor = 'ns-resize';
                 } else if (event.type === 'mousemove') {
-                    if (options.isDragging) {
-                        options.yValue = yValue; // Update line position live
+                    if (pluginState.isDragging) {
+                        pluginState.yValue = yValue; // Update line position live
                         chart.canvas.style.cursor = 'ns-resize';
-                        chart.draw(); // Re-draw immediately
+                        args.changed = true; // Re-draw
                     } else {
                         chart.canvas.style.cursor = isNear ? 'ns-resize' : 'default';
                     }
                 } else if (event.type === 'mouseup' || event.type === 'mouseout') {
-                    if (options.isDragging) {
-                        options.isDragging = false;
-                        if (onUpdate) onUpdate(options.yValue); // Trigger callback
+                    if (pluginState.isDragging) {
+                        pluginState.isDragging = false;
+                        if (onUpdate) onUpdate(pluginState.yValue); // Trigger callback
+                        args.changed = true;
                     }
                     chart.canvas.style.cursor = 'default';
                 }

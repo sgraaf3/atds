@@ -16,9 +16,14 @@ class App {
         );
         this.isLive = false;
         this.isAnalyzeMode = false;
+        this.isMultiView = false;
         this.poincareChart = null;
         this.histogramChart = null;
         
+        // Live Analysis State
+        this.liveBuffer = [];
+        this.maxSessionRR = 0;
+
         this.bindEvents();
     }
 
@@ -38,6 +43,10 @@ class App {
         // Zoom Controls
         const btnResetZoom = document.getElementById('btnResetZoom');
         if (btnResetZoom) btnResetZoom.addEventListener('click', () => this.chartManager.resetZoom());
+
+        // Multi-View Toggle
+        const btnMultiView = document.getElementById('btnMultiView');
+        if (btnMultiView) btnMultiView.addEventListener('click', () => this.toggleMultiView());
 
         // Reporting Buttons
         const saveAtdsBtn = document.getElementById('saveAtdsBtn');
@@ -182,15 +191,20 @@ class App {
     }
 
     handleCrop() {
-        // Option 1: Crop to current Zoom view
         const range = this.chartManager.getVisibleRange();
-        
-        // Option 2: Simple prompt for demo (Robust UI would use range sliders)
-        const start = prompt("Enter Start Beat Index:", range ? range.start : 0);
-        const end = prompt("Enter End Beat Index:", range ? range.end : this.session.workingRR.length);
+        if (!range) return;
 
-        if (start !== null && end !== null) {
-            this.session.cropData(parseInt(start), parseInt(end));
+        const start = Math.max(0, Math.floor(range.start));
+        const end = Math.min(this.session.workingRR.length - 1, Math.ceil(range.end));
+
+        if (end - start < 10) {
+            alert("Selection too small. Please zoom out to select at least 10 beats.");
+            return;
+        }
+
+        if (confirm(`Crop data to currently visible range (Beats ${start} to ${end})?`)) {
+            this.session.cropData(start, end);
+            this.chartManager.resetZoom();
             this.refreshChart();
         }
     }
@@ -200,12 +214,17 @@ class App {
         this.session.workingRR.push(rrValue);
         // Efficient moving window update
         this.chartManager.updateLive(rrValue);
+        
+        // Update Max RR (Resting HR proxy) efficiently
+        if (rrValue > this.maxSessionRR && rrValue < 2000) this.maxSessionRR = rrValue;
 
-        // Live Analysis (Windowed)
-        const recentData = this.session.workingRR.slice(-60); // Last ~60 beats
-        if (recentData.length < 10) return;
+        // Live Analysis (Circular Buffer / Sliding Window)
+        this.liveBuffer.push(rrValue);
+        if (this.liveBuffer.length > 60) this.liveBuffer.shift();
 
-        const results = this.analyzer.process(recentData);
+        if (this.liveBuffer.length < 10) return;
+
+        const results = this.analyzer.process(this.liveBuffer);
         if (results) {
             // Update Breath Rate
             const elBreath = document.getElementById('dispBreathRate');
@@ -216,8 +235,8 @@ class App {
 
             // Update Live VO2
             const currentHR = Math.round(60000 / rrValue);
-            const minRR = Math.max(...this.session.workingRR);
-            const restingHR = Math.round(60000 / minRR);
+            // Use cached max RR instead of iterating full history
+            const restingHR = this.maxSessionRR > 0 ? Math.round(60000 / this.maxSessionRR) : currentHR;
             
             const currentVO2 = PhysioMetrics.calculateCurrentVO2(
                 currentHR,
@@ -255,6 +274,12 @@ class App {
             (e, index) => this.showDataMenu(e, index)
         );
 
+        // Render Secondary Chart if Multi-View is active
+        if (this.isMultiView) {
+            if (this.poincareChart) this.poincareChart.destroy();
+            this.poincareChart = AdvancedCharts.renderPoincare('secondaryChart', data);
+        }
+
         if (results) {
             // Update Basic Stats
             const age = this.session.profile.age;
@@ -284,6 +309,18 @@ class App {
                 document.getElementById('dispVO2Class').innerText = vo2Class;
             }
 
+            // Update Narrative Report with Age Group Comparison
+            const reportContent = document.getElementById('reportContent');
+            if (reportContent) {
+                const hrvClass = PhysioMetrics.evaluateHRV(results.hrvAmp, age);
+                const brClass = PhysioMetrics.evaluateBreathRate(results.breathRate);
+                let html = `Analysis for a <strong>${age}-year-old ${gender}</strong>:<br>`;
+                html += `• <strong>HRV Amplitude:</strong> ${results.hrvAmp}ms (${hrvClass} for age group).<br>`;
+                html += `• <strong>VO2 Max Estimate:</strong> ${vo2 || '--'} ml/kg/min (${vo2Class}).<br>`;
+                html += `• <strong>Breath Rate:</strong> ${results.breathRate} bpm (${brClass}).`;
+                reportContent.innerHTML = html;
+            }
+
             // Update Training Zones
             this.updateZoneTable(at);
 
@@ -292,7 +329,7 @@ class App {
             if (resultsArea) resultsArea.classList.remove('hidden');
             
             // Show Export Buttons
-            ['saveAtdsBtn', 'saveTxtBtn', 'pdfBtn', 'copyBtn', 'btnAnalyzeMode', 'btnResetZoom'].forEach(id => {
+            ['saveAtdsBtn', 'saveTxtBtn', 'pdfBtn', 'copyBtn', 'btnAnalyzeMode', 'btnResetZoom', 'btnMultiView', 'btnCropData'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('hidden');
             });
@@ -327,6 +364,16 @@ class App {
             btn.innerText = this.isAnalyzeMode ? "Exit Analyze Mode" : "Analyze Chart";
             // Change button style to indicate active state
             btn.style.backgroundColor = this.isAnalyzeMode ? '#e74c3c' : '';
+        }
+        this.refreshChart();
+    }
+
+    toggleMultiView() {
+        this.isMultiView = !this.isMultiView;
+        const secWrapper = document.getElementById('secondaryChartWrapper');
+        if (secWrapper) {
+            if (this.isMultiView) secWrapper.classList.remove('hidden');
+            else secWrapper.classList.add('hidden');
         }
         this.refreshChart();
     }
@@ -492,6 +539,15 @@ class App {
 
     toggleLiveMode() {
         this.isLive = !this.isLive;
+        
+        if (this.isLive) {
+            // Initialize live state
+            this.liveBuffer = [];
+            this.maxSessionRR = this.session.workingRR.length > 0 
+                ? Math.max(...this.session.workingRR) 
+                : 0;
+        }
+
         const btn = document.getElementById('btnLiveToggle');
         if (btn) {
             btn.innerText = this.isLive ? "Stop Live Feed" : "Start Live Feed";

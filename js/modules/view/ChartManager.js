@@ -76,6 +76,12 @@ export class ChartManager {
                             wheel: { enabled: true },
                             pinch: { enabled: true },
                             mode: 'x',
+                            drag: {
+                                enabled: true,
+                                backgroundColor: 'rgba(52, 152, 219, 0.3)',
+                                borderColor: 'rgba(52, 152, 219, 1)',
+                                borderWidth: 1
+                            }
                         },
                         pan: {
                             enabled: true,

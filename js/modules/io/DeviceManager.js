@@ -8,6 +8,7 @@ export class DeviceManager {
         this.onStatus = onStatusCallback;
         this.port = null;
         this.reader = null;
+        this.writer = null;
         this.keepReading = false;
     }
 
@@ -31,8 +32,17 @@ export class DeviceManager {
             this.port = await navigator.serial.requestPort({ filters });
             await this.port.open({ baudRate: 115200 });
 
+            // Setup Writer
+            const textEncoder = new TextEncoderStream();
+            const writableStreamClosed = textEncoder.readable.pipeTo(this.port.writable);
+            this.writer = textEncoder.writable.getWriter();
+
             this.keepReading = true;
             this.readLoop();
+
+            // Query Firmware Version
+            setTimeout(() => this.send("v\r\n"), 500);
+
             return true;
         } catch (err) {
             console.error("Serial Connection Error:", err);
@@ -81,9 +91,19 @@ export class DeviceManager {
         });
     }
 
+    async send(data) {
+        if (this.writer) {
+            await this.writer.write(data);
+        }
+    }
+
     async disconnect() {
         this.keepReading = false;
         if (this.reader) await this.reader.cancel();
+        if (this.writer) {
+            await this.writer.close();
+            this.writer = null;
+        }
         if (this.port) await this.port.close();
     }
 }

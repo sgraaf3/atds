@@ -47,6 +47,8 @@
         <button id="analyzeBtn" data-tooltip="Process the loaded file and generate charts">Generate Report</button>
         <button id="btnAnalyzeMode" class="btn-secondary hidden" data-tooltip="Enter Data Cleaning Mode to edit points">Analyze Chart</button>
         <button id="btnResetZoom" class="btn-secondary hidden" data-tooltip="Reset chart zoom level">Reset Zoom</button>
+        <button id="btnMultiView" class="btn-secondary hidden" data-tooltip="Toggle side-by-side view with Poincaré plot">Multi-View</button>
+        <button id="btnCropData" class="btn-secondary hidden" data-tooltip="Crop data to current zoomed view">Crop to View</button>
         <button id="saveAtdsBtn" class="btn-secondary hidden" data-tooltip="Save current session as .atds (JSON)">Save ATDS</button>
         <button id="saveTxtBtn" class="btn-secondary hidden" data-tooltip="Export raw RR intervals as .txt">Save TXT</button>
         <button id="pdfBtn" class="btn-danger hidden" data-tooltip="Download report as PDF">Export PDF</button>
@@ -77,8 +79,13 @@
             </div>
         </div>
 
-        <div class="chart-wrapper">
-            <canvas id="mainChart"></canvas>
+        <div class="chart-row">
+            <div class="chart-wrapper" id="mainChartWrapper">
+                <canvas id="mainChart"></canvas>
+            </div>
+            <div class="chart-wrapper hidden" id="secondaryChartWrapper">
+                <canvas id="secondaryChart"></canvas>
+            </div>
         </div>
 
         <div class="report-text">
