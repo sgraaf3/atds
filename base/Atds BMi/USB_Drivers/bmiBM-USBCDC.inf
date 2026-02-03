@@ -1,0 +1,97 @@
+; Copyright (c) 2013 BM innovations GmbH
+; MSP430 Virtual COM Port Installation file for Win2000/XP/Vista/7
+;
+; Port drivers setup
+;
+; Supported operating systems:
+;   Windows 32-bit and 64-bit
+[Version]
+
+Signature="$Windows NT$" 
+CatalogFile=BMI_CDC.cat
+Class=Ports
+ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+Provider=%COMPANY%
+DriverVer=09/21/2013,1.0.0000.0
+
+[Manufacturer]
+%COMPANY%=DeviceList, NTamd64
+
+[DestinationDirs]
+FakeModemCopyFileSection=12
+DefaultDestDir=12
+
+[SourceDisksNames]
+
+[SourceDisksFiles]
+
+;You can modify next string and place your VID and PID
+[DeviceList]
+%DESCRIPTION0%=TIUSB, USB\Vid_2047&Pid_0921
+%DESCRIPTION1%=TIUSB, USB\Vid_2047&Pid_08B4
+%DESCRIPTION2%=TIUSB, USB\Vid_2047&Pid_08BB
+
+[DeviceList.NTamd64]
+%DESCRIPTION0%=TIUSB.NTamd64, USB\Vid_2047&Pid_0921
+%DESCRIPTION1%=TIUSB.NTamd64, USB\Vid_2047&Pid_08B4
+%DESCRIPTION2%=TIUSB.NTamd64, USB\Vid_2047&Pid_08BB
+
+ ;------------------------------------------------------------------------------
+;  Windows 32-bit Sections
+;------------------------------------------------------------------------------
+
+[TIUSB.nt]
+include=mdmcpq.inf
+CopyFiles=FakeModemCopyFileSection
+AddReg=TIUSB.nt.AddReg 
+
+[TIUSB.nt.AddReg]
+HKR,,NTMPDriver,,*ntkern
+HKR,,NTMPDriver,,usbser.sys 
+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+HKR,,PortSubClass,1,01
+
+[TIUSB.nt.Services]
+AddService=usbser, 0x00000002, DriverService
+
+[TIUSB.nt.HW]
+include=mdmcpq.inf
+
+[DriverService]
+DisplayName=%DESCRIPTION2%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%12%\usbser.sys
+LoadOrderGroup=Base
+
+;------------------------------------------------------------------------------
+;  Windows 64-bit Sections
+;------------------------------------------------------------------------------
+
+[TIUSB.NTamd64]
+include=mdmcpq.inf
+CopyFiles=FakeModemCopyFileSection
+AddReg=TIUSB.NTamd64.AddReg 
+
+[TIUSB.NTamd64.AddReg]
+HKR,,NTMPDriver,,*ntkern 
+HKR,,NTMPDriver,,usbser.sys 
+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+HKR,,PortSubClass,1,01
+
+[TIUSB.NTamd64.Services]
+AddService=usbser, 0x00000002, DriverService
+
+[TIUSB.NTamd64.HW]
+include=mdmcpq.inf
+
+;------------------------------------------------------------------------------
+;  String Definitions
+;------------------------------------------------------------------------------
+
+[Strings]
+COMPANY ="BM innovations GmbH"
+DESCRIPTION0="BM-USBD1" 
+DESCRIPTION1="BM-USBD4"
+DESCRIPTION2="BM-USBRTX4"

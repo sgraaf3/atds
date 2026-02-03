@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATDS Health & Breath Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h1>ATDS Health Report</h1>
+            <div class="subtitle">Bio-Metric Analysis System</div>
+        </div>
+        <div style="text-align: right;">
+            <strong>Status:</strong> <span style="color: green;">Ready</span><br>
+            <small>No Device Connected (File Mode)</small>
+        </div>
+    </header>
+
+    <div class="controls">
+        <div class="input-group">
+            <label>Load Data <span class="tooltip-icon" data-tooltip="Supports .txt (raw RR intervals) or .atds (JSON session data)">?</span></label>
+            <input type="file" id="fileInput" accept=".txt,.csv,.atds">
+        </div>
+        <div class="input-group">
+            <label>Weight (kg)</label>
+            <input type="number" id="weight" value="75">
+        </div>
+        <div class="input-group">
+            <label>Age (years)</label>
+            <input type="number" id="age" value="30">
+        </div>
+        <div class="input-group">
+            <label>Gender</label>
+            <select id="gender">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+        </div>
+        <button id="analyzeBtn" data-tooltip="Process the loaded file and generate charts">Generate Report</button>
+        <button id="saveAtdsBtn" class="btn-secondary hidden" data-tooltip="Save current session as .atds (JSON)">Save ATDS</button>
+        <button id="saveTxtBtn" class="btn-secondary hidden" data-tooltip="Export raw RR intervals as .txt">Save TXT</button>
+        <button id="pdfBtn" class="btn-danger hidden" data-tooltip="Download report as PDF">Export PDF</button>
+        <button id="copyBtn" class="btn-secondary hidden" data-tooltip="Copy summary text to clipboard">Copy Text</button>
+    </div>
+
+    <div id="resultsArea" class="hidden">
+        <div class="dashboard">
+            <div class="stat-card">
+                <div class="stat-label">Avg Heart Rate <span class="tooltip-icon" data-tooltip="Average beats per minute calculated from RR intervals">?</span></div>
+                <div class="stat-value" id="dispAvgHR">--</div>
+                <small>BPM</small>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Ti / Te Ratio <span class="tooltip-icon" data-tooltip="Inhalation Time divided by Exhalation Time. >1 means longer inhale.">?</span></div>
+                <div class="stat-value" id="dispTiTe">--</div>
+                <small>Inhale/Exhale Efficiency</small>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Breath Rate <span class="tooltip-icon" data-tooltip="Estimated breaths per minute based on RSA cycles">?</span></div>
+                <div class="stat-value" id="dispBreathRate">--</div>
+                <small>Breaths/Min</small>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">HRV Amplitude <span class="tooltip-icon" data-tooltip="Average difference between min and max heart rate during a breath cycle (RSA)">?</span></div>
+                <div class="stat-value" id="dispHrvAmp">--</div>
+                <small>ms (RSA)</small>
+            </div>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="mainChart"></canvas>
+        </div>
+
+        <div class="report-text">
+            <h3>Analysis Summary</h3>
+            <p id="reportContent">Upload data to see analysis.</p>
+            
+            <h4>Training Zones (Estimated)</h4>
+            <table class="zone-table" id="zoneTable">
+                <!-- Populated by JS -->
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+=== ATDS Original Software Functionality Index ===
+
+1. Hardware & Connectivity
+   - USB Transceiver Driver Support (BM-USBCDC)
+   - Virtual COM Port Emulation (CDC Class)
+   - Support for multiple hardware variants (from INF):
+     * BM-USBD1 (Vid_2047 & Pid_0921)
+     * BM-USBD4 (Vid_2047 & Pid_08B4)
+     * BM-USBRTX4 (Vid_2047 & Pid_08BB)
+   - Firmware Version Detection (e.g., BM-USBRTX4_V1_5 from Verification Report)
+   - Plug-and-Play Device Detection via Windows Device Manager
+
+2. Localization & Installation
+   - Multilingual Support (41 Languages identified in DriverLanguageMap.xml)
+   - Windows Hardware Certification (XP, Vista, 7, 8, 8.1)
+   - x86 and x64 Architecture Support
+
+3. Data Acquisition
+   - Real-time RR Interval Streaming
+   - Signal Quality Monitoring (Implied by Transceiver nature)
+   - Device Battery Status (Standard for Bio-sensors)
+
+4. Physiological Analysis (ATDS Algorithms)
+   - Respiratory Sinus Arrhythmia (RSA) Detection
+   - Inverted Heart Rate Logic for Breath Phase
+   - Inhalation (Ti) vs Exhalation (Te) Timing
+   - Breath Rate Calculation
+   - Heart Rate Variability (HRV) Amplitude
+   - Anaerobic Threshold (AT) Estimation (Auto AT)
+   - Heart Rate Training Zones (Recovery, Aerobic, Threshold, Anaerobic, Max)
+
+5. User Profiling
+   - Biometric Inputs: Age, Weight, Gender
+   - Advanced Inputs: Systolic/Diastolic BP, Body Fat %
+
+6. Reporting & Export
+   - Session Recording (.atds JSON format)
+   - Raw Data Export (.txt/.csv)
+   - PDF Report Generation
+   - Excel Data Dump
