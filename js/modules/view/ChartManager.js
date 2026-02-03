@@ -6,7 +6,7 @@ export class ChartManager {
         this.chart = null;
     }
 
-    render(data, atValue, onATChange) {
+    render(data, atValue, onATChange, isAnalyzeMode = false, smoothedData = null, onPointClick = null) {
         if (this.chart) this.chart.destroy();
 
         // Plugins
@@ -15,28 +15,60 @@ export class ChartManager {
             plugins.push(ChartInteractions.getATLinePlugin(atValue, onATChange));
         }
 
+        const datasets = [];
+        
+        // Main Dataset (Working RR)
+        datasets.push({
+            label: isAnalyzeMode ? 'Raw Data (Editable)' : 'Heart Rate (BPM)',
+            data: data.map(rr => Math.round(60000/rr)),
+            borderColor: isAnalyzeMode ? '#e74c3c' : '#3498db',
+            backgroundColor: isAnalyzeMode ? 'rgba(231, 76, 60, 0.1)' : 'rgba(52, 152, 219, 0.1)',
+            fill: !isAnalyzeMode,
+            tension: isAnalyzeMode ? 0 : 0.2,
+            pointRadius: isAnalyzeMode ? 4 : 0,
+            pointHoverRadius: isAnalyzeMode ? 6 : 0,
+            borderWidth: isAnalyzeMode ? 1 : 1.5,
+            borderDash: isAnalyzeMode ? [5, 5] : [],
+            order: 2
+        });
+
+        // Smoothed Dataset (Only in Analyze Mode)
+        if (isAnalyzeMode && smoothedData) {
+            datasets.push({
+                label: 'Smoothed / Filtered',
+                data: smoothedData.map(rr => Math.round(60000/rr)),
+                borderColor: '#3498db',
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.4,
+                fill: false,
+                order: 1
+            });
+        }
+
         this.chart = new Chart(this.ctx, {
             type: 'line',
             data: {
                 labels: data.map((_, i) => i),
-                datasets: [{
-                    label: 'Heart Rate (BPM)',
-                    data: data.map(rr => Math.round(60000/rr)),
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    fill: true,
-                    tension: 0.2,
-                    pointRadius: 0,
-                    borderWidth: 1.5
-                }]
+                datasets: datasets
             },
             plugins: plugins,
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: {
-                    mode: 'index',
-                    intersect: false,
+                    mode: isAnalyzeMode ? 'nearest' : 'index',
+                    intersect: isAnalyzeMode,
+                },
+                onClick: (e, elements) => {
+                    if (isAnalyzeMode && onPointClick && elements.length > 0) {
+                        const index = elements[0].index;
+                        const datasetIndex = elements[0].datasetIndex;
+                        // Ensure we are clicking the editable dataset (index 0)
+                        if (datasetIndex === 0) {
+                            onPointClick(e, index);
+                        }
+                    }
                 },
                 plugins: {
                     zoom: {
@@ -57,6 +89,26 @@ export class ChartManager {
                 }
             }
         });
+    }
+
+    updateLive(rrValue) {
+        if (!this.chart) return;
+        
+        const label = this.chart.data.labels.length;
+        const bpm = Math.round(60000/rrValue);
+        
+        this.chart.data.labels.push(label);
+        // Assuming dataset 0 is the live one
+        this.chart.data.datasets[0].data.push(bpm);
+        
+        // Moving window (e.g., 100 points)
+        const WINDOW_SIZE = 100;
+        if (this.chart.data.labels.length > WINDOW_SIZE) {
+            this.chart.data.labels.shift();
+            this.chart.data.datasets[0].data.shift();
+        }
+        
+        this.chart.update('none');
     }
 
     getVisibleRange() {

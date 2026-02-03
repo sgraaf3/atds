@@ -17,6 +17,7 @@
             <div class="subtitle">Bio-Metric Analysis System</div>
         </div>
         <div style="text-align: right;">
+            <button id="btnSettings" class="btn-secondary" style="padding: 4px 8px; font-size: 12px; margin-bottom: 5px;">⚙ Settings</button><br>
             <strong>Status:</strong> <span style="color: green;">Ready</span><br>
             <small>No Device Connected (File Mode)</small>
         </div>
@@ -43,6 +44,7 @@
             </select>
         </div>
         <button id="analyzeBtn" data-tooltip="Process the loaded file and generate charts">Generate Report</button>
+        <button id="btnAnalyzeMode" class="btn-secondary hidden" data-tooltip="Enter Data Cleaning Mode to edit points">Analyze Chart</button>
         <button id="saveAtdsBtn" class="btn-secondary hidden" data-tooltip="Save current session as .atds (JSON)">Save ATDS</button>
         <button id="saveTxtBtn" class="btn-secondary hidden" data-tooltip="Export raw RR intervals as .txt">Save TXT</button>
         <button id="pdfBtn" class="btn-danger hidden" data-tooltip="Download report as PDF">Export PDF</button>
@@ -86,6 +88,29 @@
                 <!-- Populated by JS -->
             </table>
         </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2>Preferences</h2>
+        <div class="input-group">
+            <label>Weight Unit</label>
+            <select id="settingWeightUnit">
+                <option value="kg">Kilograms (kg)</option>
+                <option value="lbs">Pounds (lbs)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Device Protocol</label>
+            <select id="settingProtocol">
+                <option value="serial">USB Serial (BM-USBCDC)</option>
+                <option value="ble">Bluetooth LE (BlueRobin)</option>
+            </select>
+        </div>
+        <button id="btnSaveSettings" class="btn-secondary" style="margin-top: 15px; width: 100%;">Save Preferences</button>
     </div>
 </div>
 

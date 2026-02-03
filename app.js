@@ -15,6 +15,7 @@ class App {
             (level) => this.updateBatteryLevel(level)
         );
         this.isLive = false;
+        this.isAnalyzeMode = false;
         this.poincareChart = null;
         this.histogramChart = null;
         
@@ -29,6 +30,10 @@ class App {
         // Profile & Analysis
         const analyzeBtn = document.getElementById('analyzeBtn');
         if (analyzeBtn) analyzeBtn.addEventListener('click', () => this.updateAnalysis());
+
+        // Analyze Mode Toggle
+        const btnAnalyzeMode = document.getElementById('btnAnalyzeMode');
+        if (btnAnalyzeMode) btnAnalyzeMode.addEventListener('click', () => this.toggleAnalyzeMode());
 
         // Reporting Buttons
         const saveAtdsBtn = document.getElementById('saveAtdsBtn');
@@ -74,6 +79,22 @@ class App {
 
         const btnExportHistogram = document.getElementById('btnExportHistogram');
         if (btnExportHistogram) btnExportHistogram.addEventListener('click', () => this.exportHistogramImage());
+
+        // Settings Modal
+        const btnSettings = document.getElementById('btnSettings');
+        if (btnSettings) btnSettings.addEventListener('click', () => this.openSettings());
+
+        const closeSettings = document.querySelector('.close-modal');
+        if (closeSettings) closeSettings.addEventListener('click', () => this.closeSettings());
+
+        const btnSaveSettings = document.getElementById('btnSaveSettings');
+        if (btnSaveSettings) btnSaveSettings.addEventListener('click', () => this.saveSettings());
+
+        // Close modal on outside click
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('settingsModal');
+            if (e.target === modal) this.closeSettings();
+        });
     }
 
     handleFileLoad(event) {
@@ -172,32 +193,49 @@ class App {
 
     handleLiveData(rrValue) {
         if (!this.isLive) return;
-        // NOTE: This is inefficient for long sessions as it re-processes and re-renders everything on each beat.
-        // A better approach would be to append data to the chart directly and calculate stats on a moving window.
         this.session.workingRR.push(rrValue);
-        this.refreshChart();
+        // Efficient moving window update
+        this.chartManager.updateLive(rrValue);
     }
 
     refreshChart() {
         const data = this.session.workingRR;
         const at = this.session.getAT();
         
-        this.chartManager.render(data, at, (newAT) => {
-            // Callback if chart supports dragging AT line
-            this.session.setManualAT(newAT);
-        });
-
-        // Run Analysis
+        // Run Analysis first to get smoothed data if needed
         const results = this.analyzer.process(data);
+        const smoothedData = results ? results.smoothedData : null;
+
+        this.chartManager.render(
+            data, 
+            at, 
+            (newAT) => {
+                this.session.setManualAT(newAT);
+                this.updateZoneTable(newAT);
+            },
+            this.isAnalyzeMode,
+            smoothedData,
+            (e, index) => this.showDataMenu(e, index)
+        );
+
         if (results) {
             // Update Basic Stats
+            const age = this.session.profile.age;
+
             if(document.getElementById('dispAvgHR')) document.getElementById('dispAvgHR').innerText = results.avgHR;
             if(document.getElementById('dispTiTe')) document.getElementById('dispTiTe').innerText = results.tiTe;
-            if(document.getElementById('dispBreathRate')) document.getElementById('dispBreathRate').innerText = results.breathRate;
-            if(document.getElementById('dispHrvAmp')) document.getElementById('dispHrvAmp').innerText = results.hrvAmp;
             
+            if(document.getElementById('dispBreathRate')) {
+                const brClass = PhysioMetrics.evaluateBreathRate(results.breathRate);
+                document.getElementById('dispBreathRate').innerHTML = `${results.breathRate} <span style="font-size:0.6em; color:#7f8c8d">(${brClass})</span>`;
+            }
+
+            if(document.getElementById('dispHrvAmp')) {
+                const hrvClass = PhysioMetrics.evaluateHRV(results.hrvAmp, age);
+                document.getElementById('dispHrvAmp').innerHTML = `${results.hrvAmp} <span style="font-size:0.6em; color:#7f8c8d">(${hrvClass})</span>`;
+            }
+
             // Update VO2 Max
-            const age = this.session.profile.age;
             const gender = this.session.profile.gender;
             // Use Min HR from analysis as proxy for Resting HR
             const rhr = 60000 / Math.max(...data); 
@@ -209,12 +247,15 @@ class App {
                 document.getElementById('dispVO2Class').innerText = vo2Class;
             }
 
+            // Update Training Zones
+            this.updateZoneTable(at);
+
             // Show Results Area
             const resultsArea = document.getElementById('resultsArea');
             if (resultsArea) resultsArea.classList.remove('hidden');
             
             // Show Export Buttons
-            ['saveAtdsBtn', 'saveTxtBtn', 'pdfBtn', 'copyBtn'].forEach(id => {
+            ['saveAtdsBtn', 'saveTxtBtn', 'pdfBtn', 'copyBtn', 'btnAnalyzeMode'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('hidden');
             });
@@ -239,6 +280,114 @@ class App {
         } else {
             alert("Please load a file first.");
         }
+    }
+
+    toggleAnalyzeMode() {
+        this.isAnalyzeMode = !this.isAnalyzeMode;
+        const btn = document.getElementById('btnAnalyzeMode');
+        if (btn) {
+            btn.classList.toggle('btn-active', this.isAnalyzeMode);
+            btn.innerText = this.isAnalyzeMode ? "Exit Analyze Mode" : "Analyze Chart";
+            // Change button style to indicate active state
+            btn.style.backgroundColor = this.isAnalyzeMode ? '#e74c3c' : '';
+        }
+        this.refreshChart();
+    }
+
+    showDataMenu(event, index) {
+        const existing = document.getElementById('chartContextMenu');
+        if (existing) existing.remove();
+
+        const menu = document.createElement('div');
+        menu.id = 'chartContextMenu';
+        menu.style.position = 'absolute';
+        const evt = event.native || event;
+        menu.style.left = evt.pageX + 'px';
+        menu.style.top = evt.pageY + 'px';
+        menu.style.background = 'white';
+        menu.style.border = '1px solid #ccc';
+        menu.style.padding = '5px';
+        menu.style.borderRadius = '4px';
+        menu.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+        menu.style.zIndex = 1000;
+
+        menu.innerHTML = `
+            <div style="font-weight:bold; border-bottom:1px solid #eee; padding:3px;">Point #${index}</div>
+            <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer;" onclick="window.app.editPoint(${index})">Edit Value</button>
+            <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer;" onclick="window.app.deletePoint(${index})">Delete Point</button>
+            <button style="display:block; width:100%; text-align:left; padding:5px; border:none; background:none; cursor:pointer; color:red;" onclick="this.parentElement.remove()">Cancel</button>
+        `;
+
+        document.body.appendChild(menu);
+        
+        setTimeout(() => {
+            document.addEventListener('click', function closeMenu(e) {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                }
+            }, { once: true });
+        }, 100);
+    }
+
+    editPoint(index) {
+        const currentRR = this.session.workingRR[index];
+        const currentBPM = Math.round(60000/currentRR);
+        const newBPM = prompt(`Edit BPM for point #${index}:`, currentBPM);
+        
+        if (newBPM !== null && !isNaN(newBPM) && newBPM > 0) {
+            const newRR = Math.round(60000 / parseInt(newBPM));
+            this.session.workingRR[index] = newRR;
+            this.refreshChart();
+        }
+        const menu = document.getElementById('chartContextMenu');
+        if(menu) menu.remove();
+    }
+
+    deletePoint(index) {
+        if(confirm(`Delete point #${index}?`)) {
+            this.session.workingRR.splice(index, 1);
+            this.refreshChart();
+        }
+        const menu = document.getElementById('chartContextMenu');
+        if(menu) menu.remove();
+    }
+
+    updateZoneTable(at) {
+        const table = document.getElementById('zoneTable');
+        if (!table || !at) return;
+
+        const zones = [
+            { name: "Recovery", range: `< ${Math.round(at * 0.8)}`, desc: "Active recovery, very light effort", color: "#2ecc71" },
+            { name: "Aerobic", range: `${Math.round(at * 0.8)} - ${Math.round(at * 0.9)}`, desc: "Endurance building, conversation pace", color: "#3498db" },
+            { name: "Tempo", range: `${Math.round(at * 0.9)} - ${Math.round(at * 0.95)}`, desc: "Rhythm, sustainable fast pace", color: "#9b59b6" },
+            { name: "Threshold", range: `${Math.round(at * 0.95)} - ${Math.round(at)}`, desc: "Lactate Threshold, hard effort", color: "#f1c40f" },
+            { name: "Anaerobic", range: `> ${Math.round(at)}`, desc: "Intervals, maximum effort", color: "#e74c3c" }
+        ];
+
+        let html = `
+            <thead>
+                <tr>
+                    <th>Zone</th>
+                    <th>Range (BPM)</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        zones.forEach(z => {
+            html += `
+                <tr>
+                    <td style="border-left: 5px solid ${z.color}; font-weight:bold;">${z.name}</td>
+                    <td>${z.range}</td>
+                    <td>${z.desc}</td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody>`;
+        table.innerHTML = html;
     }
 
     exportTxt() {
@@ -322,6 +471,32 @@ class App {
         a.download = `atds_session_${new Date().toISOString().slice(0,10)}.atds`;
         a.click();
         URL.revokeObjectURL(url);
+    }
+
+    openSettings() {
+        const modal = document.getElementById('settingsModal');
+        if (modal) modal.classList.remove('hidden');
+        
+        // Load saved settings (mock)
+        const unit = localStorage.getItem('atds_weight_unit') || 'kg';
+        const elUnit = document.getElementById('settingWeightUnit');
+        if (elUnit) elUnit.value = unit;
+    }
+
+    closeSettings() {
+        const modal = document.getElementById('settingsModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    saveSettings() {
+        const elUnit = document.getElementById('settingWeightUnit');
+        if (elUnit) {
+            localStorage.setItem('atds_weight_unit', elUnit.value);
+            // Update UI label
+            const weightGroup = document.getElementById('weight')?.parentElement;
+            if (weightGroup) weightGroup.querySelector('label').innerText = `Weight (${elUnit.value})`;
+        }
+        this.closeSettings();
     }
 
     /**

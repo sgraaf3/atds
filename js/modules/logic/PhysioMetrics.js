@@ -55,4 +55,33 @@ export class PhysioMetrics {
         if (vo2 < group.excellent) return "Excellent";
         return "Superior";
     }
+
+    /**
+     * Evaluates HRV Amplitude (RSA) against age-based norms.
+     * @param {number} hrvAmp - HRV Amplitude in ms
+     * @param {number} age - User age
+     * @returns {string} Classification
+     */
+    static evaluateHRV(hrvAmp, age) {
+        // RSA Amplitude norms (ms) - approximate
+        let low, high;
+        if (age <= 30) { low = 50; high = 100; }
+        else if (age <= 50) { low = 30; high = 60; }
+        else { low = 15; high = 35; }
+
+        if (hrvAmp < low) return "Low";
+        if (hrvAmp > high) return "High";
+        return "Normal";
+    }
+
+    /**
+     * Evaluates Breath Rate.
+     * @param {number} br - Breaths per minute
+     * @returns {string} Classification
+     */
+    static evaluateBreathRate(br) {
+        if (br < 10) return "Slow";
+        if (br > 20) return "Fast";
+        return "Normal";
+    }
 }
