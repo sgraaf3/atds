@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATDS Health & Breath Analyzer</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -45,6 +46,7 @@
         </div>
         <button id="analyzeBtn" data-tooltip="Process the loaded file and generate charts">Generate Report</button>
         <button id="btnAnalyzeMode" class="btn-secondary hidden" data-tooltip="Enter Data Cleaning Mode to edit points">Analyze Chart</button>
+        <button id="btnResetZoom" class="btn-secondary hidden" data-tooltip="Reset chart zoom level">Reset Zoom</button>
         <button id="saveAtdsBtn" class="btn-secondary hidden" data-tooltip="Save current session as .atds (JSON)">Save ATDS</button>
         <button id="saveTxtBtn" class="btn-secondary hidden" data-tooltip="Export raw RR intervals as .txt">Save TXT</button>
         <button id="pdfBtn" class="btn-danger hidden" data-tooltip="Download report as PDF">Export PDF</button>
@@ -109,6 +111,10 @@
                 <option value="serial">USB Serial (BM-USBCDC)</option>
                 <option value="ble">Bluetooth LE (BlueRobin)</option>
             </select>
+        </div>
+        <div class="input-group">
+            <label>Connected Device FW</label>
+            <div id="settingFirmware" style="padding: 10px; background: #eee; border-radius: 4px; font-size: 0.9em;">--</div>
         </div>
         <button id="btnSaveSettings" class="btn-secondary" style="margin-top: 15px; width: 100%;">Save Preferences</button>
     </div>

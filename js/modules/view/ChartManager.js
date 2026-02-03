@@ -111,6 +111,12 @@ export class ChartManager {
         this.chart.update('none');
     }
 
+    resetZoom() {
+        if (this.chart && this.chart.resetZoom) {
+            this.chart.resetZoom();
+        }
+    }
+
     getVisibleRange() {
         if (!this.chart) return null;
         return { start: this.chart.scales.x.min, end: this.chart.scales.x.max };

@@ -12,7 +12,7 @@ class App {
         this.analyzer = new ATDSAnalyzer();
         this.device = new DeviceManager(
             (data) => this.handleLiveData(data),
-            (level) => this.updateBatteryLevel(level)
+            (status) => this.handleDeviceStatus(status)
         );
         this.isLive = false;
         this.isAnalyzeMode = false;
@@ -34,6 +34,10 @@ class App {
         // Analyze Mode Toggle
         const btnAnalyzeMode = document.getElementById('btnAnalyzeMode');
         if (btnAnalyzeMode) btnAnalyzeMode.addEventListener('click', () => this.toggleAnalyzeMode());
+
+        // Zoom Controls
+        const btnResetZoom = document.getElementById('btnResetZoom');
+        if (btnResetZoom) btnResetZoom.addEventListener('click', () => this.chartManager.resetZoom());
 
         // Reporting Buttons
         const saveAtdsBtn = document.getElementById('saveAtdsBtn');
@@ -196,6 +200,39 @@ class App {
         this.session.workingRR.push(rrValue);
         // Efficient moving window update
         this.chartManager.updateLive(rrValue);
+
+        // Live Analysis (Windowed)
+        const recentData = this.session.workingRR.slice(-60); // Last ~60 beats
+        if (recentData.length < 10) return;
+
+        const results = this.analyzer.process(recentData);
+        if (results) {
+            // Update Breath Rate
+            const elBreath = document.getElementById('dispBreathRate');
+            if (elBreath) {
+                const brClass = PhysioMetrics.evaluateBreathRate(results.breathRate);
+                elBreath.innerHTML = `${results.breathRate} <span style="font-size:0.6em; color:#7f8c8d">(${brClass})</span>`;
+            }
+
+            // Update Live VO2
+            const currentHR = Math.round(60000 / rrValue);
+            const minRR = Math.max(...this.session.workingRR);
+            const restingHR = Math.round(60000 / minRR);
+            
+            const currentVO2 = PhysioMetrics.calculateCurrentVO2(
+                currentHR,
+                this.session.profile.age,
+                this.session.profile.gender,
+                restingHR
+            );
+
+            const elVO2 = document.getElementById('dispVO2');
+            if (elVO2) {
+                elVO2.innerHTML = `${currentVO2}`;
+                const elVO2Class = document.getElementById('dispVO2Class');
+                if (elVO2Class) elVO2Class.innerText = "Live Metabolic Rate";
+            }
+        }
     }
 
     refreshChart() {
@@ -255,7 +292,7 @@ class App {
             if (resultsArea) resultsArea.classList.remove('hidden');
             
             // Show Export Buttons
-            ['saveAtdsBtn', 'saveTxtBtn', 'pdfBtn', 'copyBtn', 'btnAnalyzeMode'].forEach(id => {
+            ['saveAtdsBtn', 'saveTxtBtn', 'pdfBtn', 'copyBtn', 'btnAnalyzeMode', 'btnResetZoom'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('hidden');
             });
@@ -477,10 +514,14 @@ class App {
         const modal = document.getElementById('settingsModal');
         if (modal) modal.classList.remove('hidden');
         
-        // Load saved settings (mock)
+        // Load saved settings
         const unit = localStorage.getItem('atds_weight_unit') || 'kg';
         const elUnit = document.getElementById('settingWeightUnit');
         if (elUnit) elUnit.value = unit;
+
+        const proto = localStorage.getItem('atds_protocol') || 'serial';
+        const elProto = document.getElementById('settingProtocol');
+        if (elProto) elProto.value = proto;
     }
 
     closeSettings() {
@@ -496,7 +537,26 @@ class App {
             const weightGroup = document.getElementById('weight')?.parentElement;
             if (weightGroup) weightGroup.querySelector('label').innerText = `Weight (${elUnit.value})`;
         }
+
+        const elProto = document.getElementById('settingProtocol');
+        if (elProto) {
+            localStorage.setItem('atds_protocol', elProto.value);
+        }
+
         this.closeSettings();
+    }
+
+    handleDeviceStatus(status) {
+        if (status.type === 'battery') {
+            this.updateBatteryLevel(status.value);
+        } else if (status.type === 'firmware') {
+            console.log("Device Firmware:", status.value);
+            const elFw = document.getElementById('settingFirmware');
+            if (elFw) elFw.innerText = status.value;
+            
+            // Auto-save firmware version to session if needed
+            // this.session.setFirmware(status.value);
+        }
     }
 
     /**

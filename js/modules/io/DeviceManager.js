@@ -3,8 +3,9 @@
  * Handles Web Serial connection for BMI-USBCDC Transceivers.
  */
 export class DeviceManager {
-    constructor(onDataCallback) {
+    constructor(onDataCallback, onStatusCallback) {
         this.onData = onDataCallback;
+        this.onStatus = onStatusCallback;
         this.port = null;
         this.reader = null;
         this.keepReading = false;
@@ -67,7 +68,13 @@ export class DeviceManager {
         // Parse incoming stream (assuming newline separated RR intervals)
         const lines = textChunk.split(/[\r\n]+/);
         lines.forEach(line => {
-            const rr = parseInt(line.trim());
+            const trimmed = line.trim();
+            if (trimmed.includes("V1_5") || trimmed.startsWith("BM-")) {
+                if (this.onStatus) this.onStatus({ type: 'firmware', value: trimmed });
+                return;
+            }
+
+            const rr = parseInt(trimmed);
             if (!isNaN(rr) && rr > 0 && rr < 2000) {
                 this.onData(rr);
             }

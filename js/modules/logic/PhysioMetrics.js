@@ -84,4 +84,27 @@ export class PhysioMetrics {
         if (br > 20) return "Fast";
         return "Normal";
     }
+
+    /**
+     * Estimates current VO2 consumption based on Heart Rate Reserve (HRR).
+     * @param {number} currentHR - Current Heart Rate
+     * @param {number} age - User age
+     * @param {string} gender - 'male' or 'female'
+     * @param {number} restingHR - Resting Heart Rate
+     * @returns {number} Current VO2 (ml/kg/min)
+     */
+    static calculateCurrentVO2(currentHR, age, gender, restingHR) {
+        const maxHR = 220 - age;
+        const vo2Max = this.calculateVO2Max(age, gender, restingHR);
+        if (!vo2Max) return 0;
+        
+        const vo2Rest = 3.5;
+        const hrr = maxHR - restingHR;
+        const hrReserveCurrent = currentHR - restingHR;
+        
+        if (hrr <= 0) return vo2Rest;
+        
+        let currentVO2 = (hrReserveCurrent / hrr) * (vo2Max - vo2Rest) + vo2Rest;
+        return Math.max(vo2Rest, Math.round(currentVO2 * 10) / 10);
+    }
 }
